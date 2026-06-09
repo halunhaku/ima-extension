@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Web Clipper for ima",
+  "description": "Extract web pages into clean Markdown for ima knowledge capture.",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "Web Clipper for ima",
+    "default_popup": "index.html"
+  },
+  "background": {
+    "service_worker": "assets/serviceWorker.js",
+    "type": "module"
+  },
+  "permissions": ["activeTab", "scripting", "storage", "contextMenus"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["assets/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -1,0 +1,173 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  margin: 0;
+  min-width: 520px;
+  min-height: 680px;
+  background: #f7f7f4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.icon-button {
+  @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40;
+}
+
+.toolbar-button {
+  @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-35;
+}
+
+.tab-button {
+  @apply h-8 rounded-md text-xs font-medium text-zinc-500 transition hover:text-zinc-950;
+}
+
+.tab-button-active {
+  @apply bg-white text-zinc-950 shadow-sm;
+}
+
+.primary-button {
+  @apply inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300;
+}
+
+.secondary-button {
+  @apply inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-zinc-100 px-3 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-200 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40;
+}
+
+.icon-text-button {
+  @apply inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-35;
+}
+
+.source-badge {
+  @apply inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium;
+}
+
+.source-badge-auto {
+  @apply bg-zinc-100 text-zinc-700;
+}
+
+.source-badge-selection {
+  @apply bg-blue-50 text-blue-700;
+}
+
+.source-badge-manual {
+  @apply bg-emerald-50 text-emerald-700;
+}
+
+.source-badge-fallback {
+  @apply bg-amber-50 text-amber-800;
+}
+
+.site-rule-badge {
+  @apply inline-flex shrink-0 items-center rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700;
+}
+
+.primary-button-copied {
+  @apply bg-emerald-700 hover:bg-emerald-700;
+}
+
+.empty-state {
+  @apply flex h-full min-h-[420px] flex-col items-center justify-center gap-3 text-center text-sm text-zinc-500;
+}
+
+.status-note {
+  @apply flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900;
+}
+
+.status-note-manual {
+  @apply bg-emerald-50 text-emerald-900;
+}
+
+.reader-shell {
+  @apply mx-auto max-w-[440px] rounded-lg bg-white px-5 py-5 shadow-[0_1px_0_rgba(15,23,42,0.04)];
+}
+
+.reader-content {
+  @apply text-[15px] leading-7 text-zinc-800;
+}
+
+.reader-content h1,
+.reader-content h2,
+.reader-content h3 {
+  @apply mb-3 mt-7 font-semibold leading-tight text-zinc-950;
+}
+
+.reader-content h1 {
+  @apply text-[24px];
+}
+
+.reader-content h2 {
+  @apply text-[19px];
+}
+
+.reader-content h3 {
+  @apply text-[17px];
+}
+
+.reader-content p {
+  @apply my-4;
+}
+
+.reader-content a {
+  @apply text-blue-700 underline underline-offset-2;
+}
+
+.reader-content img {
+  @apply my-4 max-w-full rounded-md;
+}
+
+.reader-content pre {
+  @apply overflow-auto rounded bg-zinc-900 p-3 text-xs leading-5 text-zinc-50;
+}
+
+.reader-content code {
+  @apply rounded bg-zinc-100 px-1 py-0.5 text-[12px];
+}
+
+.reader-content pre code {
+  @apply bg-transparent p-0 text-inherit;
+}
+
+.preview-content {
+  @apply mx-auto max-w-[440px] rounded-lg bg-white px-5 py-5 text-sm leading-7 text-zinc-800 shadow-[0_1px_0_rgba(15,23,42,0.04)];
+}
+
+.preview-content h1 {
+  @apply mb-4 mt-1 text-2xl font-semibold leading-tight text-zinc-950;
+}
+
+.preview-content h2 {
+  @apply mb-3 mt-5 text-xl font-semibold leading-tight text-zinc-950;
+}
+
+.preview-content h3 {
+  @apply mb-2 mt-4 text-lg font-semibold leading-tight text-zinc-950;
+}
+
+.preview-content p {
+  @apply my-3;
+}
+
+.preview-content ul {
+  @apply my-3 list-disc pl-5;
+}
+
+.preview-content a {
+  @apply text-blue-700 underline underline-offset-2;
+}
+
+.preview-content code {
+  @apply rounded bg-zinc-100 px-1 py-0.5 text-xs;
+}
+
+.preview-content pre {
+  @apply overflow-auto rounded bg-zinc-900 p-3 text-xs leading-5 text-zinc-50;
+}
+
+.preview-content pre code {
+  @apply bg-transparent p-0 text-inherit;
+}
