@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderDefaultMarkdown } from "./defaultTemplate";
 
 describe("renderDefaultMarkdown", () => {
-  it("wraps clipped content in the default ima markdown template", () => {
+  it("renders a clean ima note without frontmatter", () => {
     const markdown = renderDefaultMarkdown({
       title: "Structured clipping",
       url: "https://example.com/post",
@@ -11,15 +11,16 @@ describe("renderDefaultMarkdown", () => {
       content: "Body paragraph."
     });
 
-    expect(markdown).toBe(`---
-title: Structured clipping
-url: https://example.com/post
-site: Example
-captured: 2026-06-09T06:00:00.000Z
-------------------------
+    expect(markdown).toBe(`# Structured clipping
 
-# Structured clipping
+Body paragraph.
 
-Body paragraph.`);
+---
+
+Source: https://example.com/post
+Site: Example
+Captured: 2026-06-09T06:00:00.000Z`);
+    expect(markdown).not.toContain("title:");
+    expect(markdown).not.toContain("url:");
   });
 });

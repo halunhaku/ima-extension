@@ -39,13 +39,17 @@ interface ServiceWorkerChromeLike {
 }
 
 async function openClipperPopup(runtimeChrome: ServiceWorkerChromeLike, url: string): Promise<void> {
-  await runtimeChrome.windows?.create?.({
-    url,
-    type: "popup",
-    focused: true,
-    width: 560,
-    height: 760
-  });
+  try {
+    await runtimeChrome.windows?.create?.({
+      url,
+      type: "popup",
+      focused: true,
+      width: 560,
+      height: 760
+    });
+  } catch (error) {
+    console.warn("Result popup could not be opened; capture is saved in session storage.", error);
+  }
 }
 
 export async function handleRuntimeMessage(

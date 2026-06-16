@@ -64,3 +64,34 @@ export async function takePendingManualAreaCapture(
 export async function clearManualAreaSessionCache(storage: ManualAreaSessionStorage): Promise<void> {
   await removeManualAreaSession(storage);
 }
+
+const DEFAULT_RETRY_MAX = 5;
+const DEFAULT_RETRY_DELAY_MS = 80;
+
+/**
+ * Read and remove a pending manual area capture from session storage,
+ * retrying up to `maxRetries` times with `delayMs` between attempts.
+ *
+ * This handles the race condition where the service worker may not have
+ * finished writing to session storage by the time the result popup reads it.
+ *
+ * Returns the capture if found, or `null` after exhausting all retries.
+ */
+export async function retryTakePendingManualAreaCapture(
+  storage: ManualAreaSessionStorage,
+  maxRetries = DEFAULT_RETRY_MAX,
+  delayMs = DEFAULT_RETRY_DELAY_MS
+): Promise<RawPageCapture | null> {
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    const capture = await takePendingManualAreaCapture(storage);
+    if (capture) {
+      return capture;
+    }
+
+    if (attempt < maxRetries) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  return null;
+}

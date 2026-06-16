@@ -5,7 +5,7 @@
 1. Open `chrome://extensions/`.
 2. Enable `Developer mode`.
 3. Click `Load unpacked`.
-4. Select `D:\projects\ima-extension\dist`.
+4. Select the local `dist` folder from this repository.
 5. Confirm `Web Clipper for ima` appears with no load errors.
 
 ## Generic Page Capture
@@ -81,7 +81,7 @@
 1. Click `MD`.
 2. Confirm a `.md` file downloads.
 3. Confirm the filename is derived from the clipped title.
-4. Confirm the file content includes frontmatter and body Markdown.
+4. Confirm the file content includes the title, body Markdown, and source metadata footer.
 
 ## Open ima
 
@@ -89,8 +89,45 @@
 2. Confirm a new tab opens to `https://ima.qq.com/`.
 3. Confirm no content is auto-injected.
 
+## Connect ima API
+
+1. In the popup, open ima settings.
+2. Paste the Client ID and API Key from `https://ima.qq.com/agent-interface`.
+3. Click `Save Connection`.
+4. Confirm the status changes to `ima connected`.
+5. If writable knowledge bases are available, select one from the target menu.
+6. Click `Save to ima`.
+7. Confirm the status shows either `Saved as ima note.` or `Saved to ima knowledge base.`
+
 ## Known Issues
 
 - Record any site-specific extraction noise here.
 - Record any popup-close behavior around `Select Area` here.
 - Record any filename or download edge cases here.
+
+## Result Window Recovery
+
+1. Open a page, open the popup, and click `Select Area`.
+2. Click an element to capture it. Confirm the result appears in the same popup.
+3. Close the popup.
+4. Reopen the popup on the same page (via toolbar or right-click → "Open Web Clipper for ima").
+5. Confirm the popup shows the previously captured manual area result (recovered from session storage).
+6. Click `Back to Auto`. Confirm it switches to normal auto capture.
+
+## Result Window — Retry Recovery
+
+1. Open a page, open the popup, and click `Select Area`.
+2. Before clicking an element, close the popup (simulating popup close during selection).
+3. Click an element on the page — the service worker saves the capture to session storage.
+4. Reopen the popup. Confirm it attempts to restore the manual area capture.
+5. If restoration succeeds, confirm the source badge shows `Manual Area`.
+6. If restoration fails (e.g., session expired), confirm a clear error message appears with:
+   - A `Retry` button to re-attempt reading from session storage.
+   - A `Back to Auto` button to fall back to automatic page extraction.
+
+## Back To Auto (from Error State)
+
+1. Open the popup with `?source=manualArea` (e.g., by simulating a result window open).
+2. If the captured area cannot be restored, confirm the error state shows both `Retry` and `Back to Auto` buttons.
+3. Click `Back to Auto`. Confirm the popup re-runs automatic extraction and the source badge shows `Auto` or `Fallback`.
+4. Confirm session storage is cleared so future popup opens do not attempt to restore the stale manual area.

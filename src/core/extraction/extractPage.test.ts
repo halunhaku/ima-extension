@@ -28,9 +28,9 @@ describe("extractPage", () => {
     expect(result.title).toBe("Reader Mode Matters");
     expect(result.siteName).toBe("Example Journal");
     expect(result.excerpt).toBe("A practical clipping article");
-    expect(result.markdown).toContain("title: Reader Mode Matters");
-    expect(result.markdown).toContain("url: https://example.com/articles/reader");
-    expect(result.markdown).toContain("site: Example Journal");
+    expect(result.markdown).toContain("Source: https://example.com/articles/reader");
+    expect(result.markdown).toContain("Site: Example Journal");
+    expect(result.markdown).not.toContain("title:");
     expect(result.markdown).toContain("# Reader Mode Matters");
     expect(result.markdown).toContain("Useful paragraphs should survive extraction.");
     expect(result.markdown).toContain("**Important** details become markdown.");
@@ -52,7 +52,7 @@ describe("extractPage", () => {
     expect(result.title).toBe("Selection Page");
     expect(result.url).toBe("https://example.com/selection");
     expect(result.capturedAt).toBe("2026-06-09T06:10:00.000Z");
-    expect(result.markdown).toContain("captured: 2026-06-09T06:10:00.000Z");
+    expect(result.markdown).toContain("Captured: 2026-06-09T06:10:00.000Z");
     expect(result.markdown).toContain("Only this selected idea should be clipped.");
     expect(result.markdown).not.toContain("The full article should not appear.");
     expect(result.usedSelection).toBe(true);
@@ -124,7 +124,8 @@ describe("extractPage", () => {
     });
 
     expect(result.title).toBe("Clean article title");
-    expect(result.markdown).toContain("title: Clean article title");
+    expect(result.markdown).toContain("# Clean article title");
+    expect(result.markdown).not.toContain("title: Clean article title");
   });
 
   it("uses preferred site content selectors before readability", () => {
@@ -169,8 +170,8 @@ describe("extractPage", () => {
 
     expect(result.sourceMode).toBe("manualArea");
     expect(result.selectedSelector).toBe("main article");
-    expect(result.markdown).toContain("title: Manual page");
     expect(result.markdown).toContain("# Manual page");
+    expect(result.markdown).not.toContain("title: Manual page");
     expect(result.markdown).toContain("Chosen content.");
   });
 });

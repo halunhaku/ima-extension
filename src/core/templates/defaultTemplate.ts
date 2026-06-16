@@ -17,14 +17,13 @@ export function renderDefaultMarkdown(input: DefaultMarkdownTemplateInput): stri
   const capturedAt = normalizeTemplateValue(input.capturedAt);
   const content = input.content.trim();
 
-  return `---
-title: ${title}
-url: ${url}
-site: ${site}
-captured: ${capturedAt}
-------------------------
+  return `# ${title}
 
-# ${title}
+${content}
 
-${content}`.trim();
+---
+
+Source: ${url}
+Site: ${site}
+Captured: ${capturedAt}`.trim();
 }

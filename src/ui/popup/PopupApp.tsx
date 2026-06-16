@@ -2,28 +2,52 @@ import {
   AlertTriangle,
   Check,
   Clipboard,
+  Database,
   Download,
   ExternalLink,
   FileText,
   Link,
   MousePointer2,
   RefreshCw,
+  Send,
+  Settings,
   Type
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { extractPage } from "../../core/extraction/extractPage";
 import type { ExtractedPage, RawPageCapture } from "../../types/capture";
 import { downloadMarkdown } from "./exportActions";
+import {
+  addNoteToKnowledgeBase,
+  importImaMarkdownNote,
+  listAddableKnowledgeBases,
+  type ImaCredentials,
+  type ImaKnowledgeBaseOption
+} from "./imaApi";
+import {
+  getImaSettings,
+  saveImaCredentials,
+  saveSelectedKnowledgeBaseId,
+  type ImaSettings
+} from "./imaSettings";
+import { formatImaSaveButton, formatImaStatusLine } from "./imaStatus";
 import { renderMarkdownPreview } from "./markdownPreview";
 import {
   clearManualAreaSessionCache,
-  shouldShowBackToAuto
+  retryTakePendingManualAreaCapture,
+  shouldShowBackToAuto,
+  takePendingManualAreaCapture
 } from "./manualAreaState";
 import { resolvePreferredCapture } from "./popupCapture";
 
 type ViewMode = "reader" | "markdown" | "preview";
 
 interface LoadState {
+  status: "idle" | "loading" | "ready" | "error";
+  message: string;
+}
+
+interface ImaState {
   status: "idle" | "loading" | "ready" | "error";
   message: string;
 }
@@ -108,8 +132,43 @@ export function PopupApp() {
     status: "idle",
     message: ""
   });
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [imaSettings, setImaSettings] = useState<ImaSettings>({});
+  const [knowledgeBases, setKnowledgeBases] = useState<ImaKnowledgeBaseOption[]>([]);
+  const [imaState, setImaState] = useState<ImaState>({ status: "idle", message: "" });
+  const [showImaSettings, setShowImaSettings] = useState(false);
+  const [clientIdInput, setClientIdInput] = useState("");
+  const [apiKeyInput, setApiKeyInput] = useState("");
+  const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState("");
 
   const previewHtml = useMemo(() => renderMarkdownPreview(page?.markdown ?? ""), [page?.markdown]);
+  const selectedKnowledgeBaseName = useMemo(
+    () =>
+      knowledgeBases.find((knowledgeBase) => knowledgeBase.id === selectedKnowledgeBaseId)?.name,
+    [knowledgeBases, selectedKnowledgeBaseId]
+  );
+  const imaStatusLine = formatImaStatusLine({
+    connected: Boolean(imaSettings.credentials),
+    selectedKnowledgeBaseName,
+    message: imaState.message,
+    status: imaState.status
+  });
+  const imaSaveButton = formatImaSaveButton({
+    connected: Boolean(imaSettings.credentials),
+    message: imaState.message,
+    status: imaState.status
+  });
+
+  async function refreshKnowledgeBases(credentials: ImaCredentials) {
+    setImaState({ status: "loading", message: "Loading ima targets..." });
+    const options = await listAddableKnowledgeBases(credentials);
+    setKnowledgeBases(options);
+    setImaState({
+      status: "ready",
+      message: options.length ? "ima connected" : "ima connected; no writable knowledge bases found."
+    });
+    return options;
+  }
 
   const loadPage = useCallback(async (options?: { ignorePendingManualArea?: boolean }) => {
     setLoadState({ status: "loading", message: "Extracting this page..." });
@@ -140,8 +199,54 @@ export function PopupApp() {
   }, []);
 
   useEffect(() => {
-    void loadPage();
+    const params = new URLSearchParams(window.location.search);
+    const isResultWindow = params.get("source") === "manualArea";
+
+    if (isResultWindow) {
+      setIsRecoveryMode(true);
+      setLoadState({
+        status: "loading",
+        message: "Restoring captured area..."
+      });
+      void retryTakePendingManualAreaCapture(chrome.storage.session).then((capture) => {
+        if (capture) {
+          const extracted = extractPage(capture);
+          setPage(extracted);
+          setLoadState({
+            status: "ready",
+            message: extracted.markdown.trim() ? "" : "No readable content found."
+          });
+        } else {
+          setLoadState({
+            status: "error",
+            message:
+              "Captured area could not be restored. The session data may have expired or was unavailable. You can retry or capture the current page automatically."
+          });
+        }
+      });
+    } else {
+      void loadPage();
+    }
   }, [loadPage]);
+
+  useEffect(() => {
+    void getImaSettings(chrome.storage.local).then((settings) => {
+      setImaSettings(settings);
+      setClientIdInput(settings.credentials?.clientId ?? "");
+      setSelectedKnowledgeBaseId(settings.selectedKnowledgeBaseId ?? "");
+      if (settings.credentials) {
+        setShowImaSettings(false);
+        void refreshKnowledgeBases(settings.credentials).catch((error) => {
+          setImaState({
+            status: "error",
+            message: error instanceof Error ? error.message : "ima connection failed."
+          });
+        });
+      } else {
+        setShowImaSettings(true);
+      }
+    });
+  }, []);
 
   async function copyMarkdown() {
     if (!page?.markdown) {
@@ -187,6 +292,92 @@ export function PopupApp() {
     void chrome.tabs.create({ url: "https://ima.qq.com/" });
   }
 
+  async function connectIma() {
+    try {
+      const settings = await saveImaCredentials(chrome.storage.local, {
+        clientId: clientIdInput,
+        apiKey: apiKeyInput
+      });
+      setImaSettings(settings);
+      setApiKeyInput("");
+      const options = await refreshKnowledgeBases(settings.credentials as ImaCredentials);
+      const storedTarget = settings.selectedKnowledgeBaseId;
+      if (storedTarget && options.some((option) => option.id === storedTarget)) {
+        setSelectedKnowledgeBaseId(storedTarget);
+      }
+      setShowImaSettings(false);
+    } catch (error) {
+      setImaState({
+        status: "error",
+        message: error instanceof Error ? error.message : "ima connection failed."
+      });
+    }
+  }
+
+  async function chooseKnowledgeBase(knowledgeBaseId: string) {
+    setSelectedKnowledgeBaseId(knowledgeBaseId);
+    const settings = await saveSelectedKnowledgeBaseId(chrome.storage.local, knowledgeBaseId);
+    setImaSettings(settings);
+  }
+
+  async function saveCurrentPageToIma() {
+    if (!page?.markdown.trim() || !imaSettings.credentials) {
+      setShowImaSettings(true);
+      setImaState({
+        status: "error",
+        message: imaSettings.credentials ? "No Markdown content to save." : "Connect ima first."
+      });
+      return;
+    }
+
+    try {
+      setImaState({ status: "loading", message: "Saving to ima..." });
+      const imported = await importImaMarkdownNote(page.markdown, imaSettings.credentials);
+      if (selectedKnowledgeBaseId) {
+        await addNoteToKnowledgeBase(
+          {
+            noteId: imported.noteId,
+            knowledgeBaseId: selectedKnowledgeBaseId,
+            title: page.title
+          },
+          imaSettings.credentials
+        );
+      }
+      setImaState({
+        status: "ready",
+        message: selectedKnowledgeBaseId ? "Saved to ima knowledge base." : "Saved as ima note."
+      });
+    } catch (error) {
+      setImaState({
+        status: "error",
+        message: error instanceof Error ? error.message : "Save to ima failed."
+      });
+    }
+  }
+
+  async function showCaptureResult(capture: RawPageCapture) {
+    try {
+      const extracted = extractPage(capture);
+      setPage(extracted);
+      setLoadState({
+        status: "ready",
+        message:
+          extracted.markdown.trim()
+            ? ""
+            : "No readable content was found in the selected area."
+      });
+    } catch (error) {
+      setPage(null);
+      setLoadState({
+        status: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Selected area could not be extracted."
+      });
+    }
+  }
+
   async function selectArea() {
     setLoadState({
       status: "loading",
@@ -198,7 +389,11 @@ export function PopupApp() {
       const capture = await startManualAreaCapture();
       if (!capture) {
         setLoadState({ status: page ? "ready" : "idle", message: "Area selection canceled." });
+        return;
       }
+      // Display the captured area result immediately in this popup,
+      // without relying on the background opening a new result window.
+      await showCaptureResult(capture);
     } catch (error) {
       setLoadState({
         status: "error",
@@ -211,8 +406,9 @@ export function PopupApp() {
   }
 
   return (
-    <main className="flex h-[680px] w-[520px] flex-col bg-[#f7f7f4] text-zinc-950">
-      <header className="px-5 pb-3 pt-4">
+    <main className="flex h-[600px] w-[560px] overflow-hidden bg-[#f7f7f4] text-zinc-950">
+      <div className="flex min-h-0 w-full flex-col">
+        <header className="shrink-0 px-5 pb-2 pt-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500">
@@ -248,9 +444,9 @@ export function PopupApp() {
             </>
           ) : null}
         </div>
-      </header>
+        </header>
 
-      <div className="px-5 pb-3">
+        <div className="shrink-0 px-5 pb-2">
         <nav className="grid grid-cols-3 gap-1 rounded-lg bg-zinc-200/60 p-1">
           {(["reader", "markdown", "preview"] as const).map((tab) => (
             <button
@@ -263,9 +459,9 @@ export function PopupApp() {
             </button>
           ))}
         </nav>
-      </div>
+        </div>
 
-      <section className="min-h-0 flex-1 overflow-auto px-5 pb-4">
+        <section className="min-h-0 flex-1 overflow-hidden px-5 pb-3">
         {page?.extractionWarning ? (
           <div className="status-note mb-3">
             <AlertTriangle className="mt-0.5 shrink-0" size={16} />
@@ -297,6 +493,51 @@ export function PopupApp() {
           <div className="empty-state">
             <FileText size={24} />
             <p>{loadState.message}</p>
+            {isRecoveryMode ? (
+              <div className="mt-4 flex gap-2">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => {
+                    setLoadState({ status: "loading", message: "Retrying..." });
+                    void retryTakePendingManualAreaCapture(chrome.storage.session, 8, 100).then(
+                      (capture) => {
+                        if (capture) {
+                          const extracted = extractPage(capture);
+                          setPage(extracted);
+                          setLoadState({
+                            status: "ready",
+                            message: extracted.markdown.trim() ? "" : "No readable content found."
+                          });
+                        } else {
+                          setLoadState({
+                            status: "error",
+                            message:
+                              "Captured area could not be restored. The session may have expired."
+                          });
+                        }
+                      }
+                    );
+                  }}
+                  disabled={false}
+                >
+                  <RefreshCw size={16} />
+                  Retry
+                </button>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={async () => {
+                    setIsRecoveryMode(false);
+                    await clearManualAreaSessionCache(chrome.storage.session);
+                    await loadPage({ ignorePendingManualArea: true });
+                  }}
+                  disabled={false}
+                >
+                  Back to Auto
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -318,7 +559,7 @@ export function PopupApp() {
 
         {page && mode === "markdown" ? (
           <textarea
-            className="h-full min-h-[510px] w-full resize-none rounded-lg bg-white p-4 font-mono text-xs leading-5 text-zinc-800 shadow-[0_1px_0_rgba(15,23,42,0.04)] outline-none focus:ring-2 focus:ring-zinc-200"
+            className="h-full min-h-0 w-full resize-none overflow-auto rounded-lg bg-white p-4 font-mono text-xs leading-5 text-zinc-800 shadow-[0_1px_0_rgba(15,23,42,0.04)] outline-none focus:ring-2 focus:ring-zinc-200"
             value={page.markdown}
             onChange={(event) =>
               setPage({
@@ -332,10 +573,115 @@ export function PopupApp() {
         {page && mode === "preview" ? (
           <article className="preview-content" dangerouslySetInnerHTML={{ __html: previewHtml }} />
         ) : null}
-      </section>
+        </section>
 
-      <footer className="px-5 pb-4 pt-2">
-        <div className="mb-3 flex items-center justify-between gap-3">
+        <footer className="shrink-0 px-5 pb-3 pt-2">
+        <div className="ima-panel ima-panel-compact mb-3">
+          <div className="ima-action-row">
+            <div className="ima-status-line">
+              <Database size={15} className="shrink-0 text-emerald-700" />
+              <div className="min-w-0">
+                <p
+                  className={`truncate text-xs font-semibold ${
+                    imaState.status === "error" ? "text-red-700" : "text-zinc-800"
+                  }`}
+                  title={imaStatusLine}
+                >
+                  {imaStatusLine}
+                </p>
+              </div>
+            </div>
+
+            {imaSettings.credentials ? (
+              <select
+                className="ima-select ima-select-compact"
+                value={selectedKnowledgeBaseId}
+                onChange={(event) => void chooseKnowledgeBase(event.target.value)}
+                disabled={imaState.status === "loading"}
+                title="ima target"
+              >
+                <option value="">Note only</option>
+                {knowledgeBases.map((knowledgeBase) => (
+                  <option key={knowledgeBase.id} value={knowledgeBase.id}>
+                    {knowledgeBase.name}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+
+            {imaSettings.credentials ? (
+              <button
+                className="toolbar-button"
+                type="button"
+                title="Refresh ima targets"
+                onClick={() =>
+                  imaSettings.credentials
+                    ? void refreshKnowledgeBases(imaSettings.credentials)
+                    : undefined
+                }
+                disabled={imaState.status === "loading"}
+              >
+                <RefreshCw size={15} />
+              </button>
+            ) : null}
+
+            <button
+              className={`primary-button ima-save-button ${
+                imaSaveButton.tone === "success"
+                  ? "ima-save-button-success"
+                  : imaSaveButton.tone === "error"
+                    ? "ima-save-button-error"
+                    : ""
+              }`}
+              type="button"
+              onClick={() => void saveCurrentPageToIma()}
+              disabled={!page?.markdown || imaState.status === "loading"}
+              title={imaSettings.credentials ? "Save to ima" : "Connect ima first"}
+            >
+              {imaSaveButton.tone === "success" ? <Check size={15} /> : <Send size={15} />}
+              {imaSaveButton.label}
+            </button>
+
+            <button
+              className="toolbar-button"
+              type="button"
+              title="ima settings"
+              onClick={() => setShowImaSettings((value) => !value)}
+            >
+              <Settings size={16} />
+            </button>
+          </div>
+
+          {showImaSettings ? (
+            <div className="mt-3 grid gap-2">
+              <input
+                className="ima-input"
+                type="text"
+                value={clientIdInput}
+                onChange={(event) => setClientIdInput(event.target.value)}
+                placeholder="ima Client ID"
+                autoComplete="off"
+              />
+              <input
+                className="ima-input"
+                type="password"
+                value={apiKeyInput}
+                onChange={(event) => setApiKeyInput(event.target.value)}
+                placeholder={imaSettings.credentials ? "Paste API Key to update" : "ima API Key"}
+                autoComplete="off"
+              />
+              <button
+                className="secondary-button justify-self-start"
+                type="button"
+                onClick={() => void connectIma()}
+                disabled={imaState.status === "loading"}
+              >
+                Save Connection
+              </button>
+            </div>
+          ) : null}
+        </div>
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-1">
             {shouldShowBackToAuto(page) ? (
               <button
@@ -361,6 +707,18 @@ export function PopupApp() {
             </button>
           </div>
           <div className="flex items-center gap-1">
+            <button
+              className={`primary-button compact-primary-button ${
+                actionState === "Markdown copied" ? "primary-button-copied" : ""
+              }`}
+              type="button"
+              onClick={copyMarkdown}
+              disabled={!page?.markdown}
+              title="Copy Markdown"
+            >
+              {actionState === "Markdown copied" ? <Check size={16} /> : <Clipboard size={16} />}
+              {actionState === "Markdown copied" ? "Copied" : "Copy Markdown"}
+            </button>
             <button
               className="toolbar-button"
               type="button"
@@ -393,32 +751,8 @@ export function PopupApp() {
             </button>
           </div>
         </div>
-        <div className="flex items-center justify-between gap-3 rounded-lg bg-white p-2 shadow-[0_1px_0_rgba(15,23,42,0.06)]">
-          <div className="min-w-0 px-1">
-          <a
-            className="block min-w-0 truncate text-xs text-zinc-500 hover:text-zinc-800"
-            href={page?.url}
-            target="_blank"
-            rel="noreferrer"
-            title={page?.url}
-          >
-            {page?.url ?? "No page loaded"}
-          </a>
-          <p className="mt-1 text-xs font-medium text-emerald-700">
-            {actionState || "v0.1.0 / Phase 1 Preview / Local-first clipping"}
-          </p>
-          </div>
-          <button
-            className={`primary-button ${actionState === "Markdown copied" ? "primary-button-copied" : ""}`}
-            type="button"
-            onClick={copyMarkdown}
-            disabled={!page?.markdown}
-          >
-            {actionState === "Markdown copied" ? <Check size={17} /> : <Clipboard size={17} />}
-            {actionState === "Markdown copied" ? "Copied" : "Copy Markdown"}
-          </button>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </main>
   );
 }

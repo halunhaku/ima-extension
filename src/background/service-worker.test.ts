@@ -72,6 +72,34 @@ describe("service worker runtime messages", () => {
     expect(result).toBe(false);
     expect(create).not.toHaveBeenCalled();
   });
+
+  it("handles window creation failure gracefully", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const create = vi.fn(async () => {
+      throw new Error("Extension context invalidated.");
+    });
+    const getURL = vi.fn((path) => `chrome-extension://test/${path}`);
+    const set = vi.fn(async () => undefined);
+    const capture = {
+      title: "Manual",
+      url: "https://example.com/article",
+      html: "<html></html>",
+      sourceMode: "manualArea" as const,
+      selectedHtml: "<section>Body</section>",
+      selectedText: "Body"
+    };
+    const result = await handleRuntimeMessage(
+      { type: "IMA_CLIPPER_MANUAL_AREA_CAPTURED", capture },
+      { runtime: { getURL }, windows: { create }, storage: { session: { set } } }
+    );
+
+    expect(result).toBe(true);
+    expect(set).toHaveBeenCalledWith({ imaClipperLastManualAreaCapture: capture });
+    expect(warn).toHaveBeenCalledWith(
+      "Result popup could not be opened; capture is saved in session storage.",
+      expect.any(Error)
+    );
+  });
 });
 
 describe("service worker context menu", () => {
@@ -115,3 +143,22 @@ describe("service worker context menu", () => {
     });
   });
 });
+
+  it("saves to session storage even when runtime.getURL is unavailable", async () => {
+    const set = vi.fn(async () => undefined);
+    const capture = {
+      title: "Manual",
+      url: "https://example.com/article",
+      html: "<html></html>",
+      sourceMode: "manualArea" as const,
+      selectedHtml: "<section>Body</section>",
+      selectedText: "Body"
+    };
+    const result = await handleRuntimeMessage(
+      { type: "IMA_CLIPPER_MANUAL_AREA_CAPTURED", capture },
+      { storage: { session: { set } } }
+    );
+
+    expect(result).toBe(true);
+    expect(set).toHaveBeenCalledWith({ imaClipperLastManualAreaCapture: capture });
+  });

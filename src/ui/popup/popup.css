@@ -5,9 +5,16 @@
 html,
 body {
   margin: 0;
-  min-width: 520px;
-  min-height: 680px;
+  width: 560px;
+  height: 600px;
+  overflow: hidden;
   background: #f7f7f4;
+}
+
+#root {
+  width: 560px;
+  height: 600px;
+  overflow: hidden;
 }
 
 * {
@@ -34,8 +41,53 @@ body {
   @apply inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300;
 }
 
+.compact-primary-button {
+  @apply h-9 px-3 text-xs;
+}
+
 .secondary-button {
   @apply inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md bg-zinc-100 px-3 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-200 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40;
+}
+
+.ima-panel {
+  @apply rounded-lg border border-emerald-100 bg-white p-3 shadow-[0_1px_0_rgba(15,23,42,0.05)];
+}
+
+.ima-panel-compact {
+  @apply px-3 py-2;
+}
+
+.ima-action-row {
+  @apply flex min-w-0 items-center gap-2;
+}
+
+.ima-status-line {
+  @apply flex min-w-0 flex-1 items-center gap-2;
+}
+
+.ima-input,
+.ima-select {
+  @apply h-9 min-w-0 rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-800 outline-none transition placeholder:text-zinc-400 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-400;
+}
+
+.ima-select {
+  @apply flex-1;
+}
+
+.ima-select-compact {
+  @apply h-8 max-w-[170px] flex-none px-2;
+}
+
+.ima-save-button {
+  @apply h-8 px-3 text-xs;
+}
+
+.ima-save-button-success {
+  @apply bg-emerald-700 hover:bg-emerald-700;
+}
+
+.ima-save-button-error {
+  @apply bg-red-700 hover:bg-red-700;
 }
 
 .icon-text-button {
@@ -71,7 +123,7 @@ body {
 }
 
 .empty-state {
-  @apply flex h-full min-h-[420px] flex-col items-center justify-center gap-3 text-center text-sm text-zinc-500;
+  @apply flex h-full min-h-[300px] flex-col items-center justify-center gap-3 text-center text-sm text-zinc-500;
 }
 
 .status-note {
@@ -83,7 +135,7 @@ body {
 }
 
 .reader-shell {
-  @apply mx-auto max-w-[440px] rounded-lg bg-white px-5 py-5 shadow-[0_1px_0_rgba(15,23,42,0.04)];
+  @apply mx-auto h-full max-w-[480px] overflow-auto rounded-lg bg-white px-5 py-5 shadow-[0_1px_0_rgba(15,23,42,0.04)];
 }
 
 .reader-content {
@@ -133,7 +185,7 @@ body {
 }
 
 .preview-content {
-  @apply mx-auto max-w-[440px] rounded-lg bg-white px-5 py-5 text-sm leading-7 text-zinc-800 shadow-[0_1px_0_rgba(15,23,42,0.04)];
+  @apply mx-auto h-full max-w-[480px] overflow-auto rounded-lg bg-white px-5 py-5 text-sm leading-7 text-zinc-800 shadow-[0_1px_0_rgba(15,23,42,0.04)];
 }
 
 .preview-content h1 {

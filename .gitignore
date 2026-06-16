@@ -6,5 +6,9 @@ releases/
 .env.*
 *.log
 
+.codegraph/
+.reasonix/
+reasonix.toml
+
 .DS_Store
 Thumbs.db
