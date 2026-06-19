@@ -131,11 +131,11 @@ describe("service worker context menu", () => {
     const listener = onClickedListener.mock.calls[0]?.[0];
     expect(listener).toBeTypeOf("function");
 
-    listener({ menuItemId: "copy-page-markdown" });
+    listener({ menuItemId: "copy-page-markdown" }, { id: 123 } as chrome.tabs.Tab);
 
-    expect(getURL).toHaveBeenCalledWith("index.html");
+    expect(getURL).toHaveBeenCalledWith("index.html?tabId=123");
     expect(createWindow).toHaveBeenCalledWith({
-      url: "chrome-extension://test/index.html",
+      url: "chrome-extension://test/index.html?tabId=123",
       type: "popup",
       focused: true,
       width: 560,

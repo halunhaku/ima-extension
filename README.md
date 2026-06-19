@@ -89,3 +89,12 @@ npm run package
 ```
 
 For browser smoke testing, follow [docs/manual-test-checklist.md](docs/manual-test-checklist.md).
+
+## Chrome Web Store Prep
+
+Before submitting to the Chrome Web Store, review:
+
+- [docs/privacy-policy.md](docs/privacy-policy.md)
+- [docs/chrome-store-listing.md](docs/chrome-store-listing.md)
+
+The extension package includes local icons under `public/icons`. Store listing screenshots and the 440x280 promotional image are uploaded separately in the Chrome Web Store Developer Dashboard.

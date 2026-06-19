@@ -88,12 +88,14 @@ export function registerServiceWorker(runtimeChrome: ServiceWorkerChromeLike): v
     });
   });
 
-  runtimeChrome.contextMenus?.onClicked?.addListener((info) => {
+  runtimeChrome.contextMenus?.onClicked?.addListener((info, tab) => {
     if (info.menuItemId !== "copy-page-markdown") {
       return;
     }
 
-    const clipUrl = runtimeChrome.runtime?.getURL?.("index.html");
+    const clipUrl = runtimeChrome.runtime?.getURL?.(
+      tab?.id ? `index.html?tabId=${tab.id}` : "index.html"
+    );
     if (clipUrl) {
       void openClipperPopup(runtimeChrome, clipUrl);
     }

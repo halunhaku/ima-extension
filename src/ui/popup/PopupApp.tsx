@@ -38,6 +38,7 @@ import {
   shouldShowBackToAuto,
   takePendingManualAreaCapture
 } from "./manualAreaState";
+import { getTargetTab } from "./activeTab";
 import { resolvePreferredCapture } from "./popupCapture";
 
 type ViewMode = "reader" | "markdown" | "preview";
@@ -52,16 +53,8 @@ interface ImaState {
   message: string;
 }
 
-async function getActiveTab(): Promise<chrome.tabs.Tab> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) {
-    throw new Error("No active tab is available.");
-  }
-  return tab;
-}
-
 async function captureActivePage(): Promise<RawPageCapture> {
-  const tab = await getActiveTab();
+  const tab = await getTargetTab();
 
   try {
     return await chrome.tabs.sendMessage(tab.id as number, {
@@ -79,7 +72,7 @@ async function captureActivePage(): Promise<RawPageCapture> {
 }
 
 async function startManualAreaCapture(): Promise<RawPageCapture | null> {
-  const tab = await getActiveTab();
+  const tab = await getTargetTab();
 
   try {
     const response = await chrome.tabs.sendMessage(tab.id as number, {
