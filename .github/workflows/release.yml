@@ -83,6 +83,7 @@ jobs:
         if: steps.release.outputs.recovery != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ steps.release.outputs.tag }}
           VERSION: ${{ steps.release.outputs.version }}
         run: |
@@ -111,6 +112,7 @@ jobs:
         if: steps.release.outputs.recovery == 'true' || success()
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           TAG: ${{ steps.release.outputs.tag }}
           RECOVERY_ONLY: ${{ steps.release.outputs.recovery }}
         run: |
