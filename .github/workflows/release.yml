@@ -1,0 +1,144 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Retry an existing vX.Y.Z tag release
+        required: true
+        type: string
+      publish_github_release_only:
+        description: Publish draft only after Chrome Web Store acceptance is confirmed
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: chrome-web-store-release
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Resolve release tag
+        id: release
+        env:
+          REQUESTED_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          RECOVERY_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_github_release_only || false }}
+        run: |
+          if [[ ! "$REQUESTED_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag must match vX.Y.Z." >&2
+            exit 1
+          fi
+          echo "tag=$REQUESTED_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${REQUESTED_TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "recovery=$RECOVERY_REQUESTED" >> "$GITHUB_OUTPUT"
+
+      - name: Check out release tag
+        if: steps.release.outputs.recovery != 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+
+      - name: Set up Node.js
+        if: steps.release.outputs.recovery != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.release.outputs.recovery != 'true'
+        run: npm ci
+
+      - name: Verify release version
+        if: steps.release.outputs.recovery != 'true'
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: node scripts/release-version.mjs "$TAG"
+
+      - name: Run tests
+        if: steps.release.outputs.recovery != 'true'
+        run: npm test
+
+      - name: Validate release
+        if: steps.release.outputs.recovery != 'true'
+        run: npm run validate
+
+      - name: Package extension
+        if: steps.release.outputs.recovery != 'true'
+        run: npm run package
+
+      - name: Prepare draft GitHub Release
+        if: steps.release.outputs.recovery != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            IS_DRAFT=$(gh release view "$TAG" --json isDraft --jq '.isDraft')
+            if [[ "$IS_DRAFT" != "true" ]]; then
+              echo "Existing release for $TAG is not a draft." >&2
+              exit 1
+            fi
+          else
+            gh release create "$TAG" --verify-tag --draft --title "Web Clipper for ima $TAG" --notes "Automated release for $TAG."
+          fi
+          gh release upload "$TAG" "dist/web-clipper-for-ima-$VERSION.zip" --clobber
+
+      - name: Publish to Chrome Web Store
+        if: steps.release.outputs.recovery != 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+          CWS_ITEM_ID: ${{ secrets.CWS_ITEM_ID }}
+        run: npm run cws:publish -- "dist/web-clipper-for-ima-${{ steps.release.outputs.version }}.zip"
+
+      - name: Publish GitHub Release
+        if: steps.release.outputs.recovery == 'true' || success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          RECOVERY_ONLY: ${{ steps.release.outputs.recovery }}
+        run: |
+          IS_DRAFT=$(timeout 60s gh release view "$TAG" --json isDraft --jq '.isDraft')
+          if [[ "$IS_DRAFT" != "true" ]]; then
+            echo "Existing release for $TAG is not an unpublished draft." >&2
+            exit 1
+          fi
+          if [[ "$RECOVERY_ONLY" == "true" ]]; then
+            echo "Recovery mode: Chrome Web Store acceptance was confirmed by the operator."
+          fi
+          for attempt in 1 2 3; do
+            if timeout 60s gh release edit "$TAG" --draft=false; then
+              exit 0
+            fi
+            if [[ "$attempt" -lt 3 ]]; then
+              sleep $((attempt * 5))
+            fi
+          done
+          echo "Unable to publish the GitHub Release after 3 attempts." >&2
+          exit 1
+
+      - name: Summarize release failure
+        if: failure()
+        run: |
+          {
+            echo "## Release stopped"
+            echo "The draft remains unpublished if draft creation completed."
+            echo "Inspect the failed step and the Chrome Web Store dashboard before retrying the existing tag."
+            echo "Recovery mode skips Chrome Web Store submission and must only be used after the dashboard confirms acceptance."
+          } >> "$GITHUB_STEP_SUMMARY"

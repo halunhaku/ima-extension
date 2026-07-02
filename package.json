@@ -3,11 +3,20 @@
   "version": "0.1.1",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
-    "package": "node scripts/package-extension.cjs",
-    "test": "vitest run",
+    "validate": "node scripts/validate-release.mjs",
+    "package": "npm run validate && npm run build && node scripts/package-release.mjs",
+    "release:zip": "npm run package",
+    "cws:publish": "node scripts/cws-publish.mjs",
+    "cws:auth": "node scripts/cws-auth.mjs",
+    "test": "npm run test:unit && npm run test:scripts",
+    "test:unit": "vitest run",
+    "test:scripts": "node --test scripts/package-release.test.mjs scripts/release-version.test.mjs scripts/cws-api.test.mjs scripts/cws-publish.test.mjs scripts/cws-auth.test.mjs scripts/release-workflow.test.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {
