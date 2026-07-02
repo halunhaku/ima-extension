@@ -111,6 +111,27 @@ test("publishItem posts the public default target as JSON", async () => {
   assert.equal(init.body, JSON.stringify({ target: "default" }));
 });
 
+test("publishItem treats ITEM_PENDING_REVIEW as an accepted publication state", async () => {
+  const result = await publishItem({
+    itemId: "item/id",
+    accessToken: "publish-token",
+    fetchImpl: async () =>
+      jsonResponse({
+        status: ["ITEM_PENDING_REVIEW"],
+        statusDetail: [
+          "Your extension may require an in-depth review because your item is requesting broad host permissions."
+        ]
+      })
+  });
+
+  assert.deepEqual(result, {
+    status: ["ITEM_PENDING_REVIEW"],
+    statusDetail: [
+      "Your extension may require an in-depth review because your item is requesting broad host permissions."
+    ]
+  });
+});
+
 test("publishItem redacts secrets from non-OK responses", async () => {
   await assert.rejects(
     publishItem({

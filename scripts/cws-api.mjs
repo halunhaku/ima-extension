@@ -272,6 +272,10 @@ function publishOutcomeError(reason, data, accessToken) {
   return new Error(`Publish item failed: ${reason} ${JSON.stringify(detail)}`);
 }
 
+function isAcceptedPublicationStatus(status) {
+  return status === "OK" || status === "ITEM_PENDING_REVIEW";
+}
+
 export async function waitForUpload({
   itemId,
   accessToken,
@@ -350,7 +354,7 @@ export async function publishItem({
     throw publishOutcomeError("malformed application status", data, accessToken);
   }
 
-  if (data.status.some((status) => status !== "OK")) {
+  if (data.status.some((status) => !isAcceptedPublicationStatus(status))) {
     throw publishOutcomeError("application status", data, accessToken);
   }
 
