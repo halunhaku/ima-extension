@@ -104,6 +104,7 @@ The extension package includes local icons under `public/icons`. Store listing s
 - Before creating the tag, `package.json` and `manifest.json` must already contain the same version.
 - The GitHub Actions workflow rebuilds the extension, creates or reuses a draft GitHub Release, uploads the ZIP artifact, and submits the Chrome Web Store item for review.
 - The GitHub Release is published only after the Chrome Web Store API accepts the submission.
+- Push the release commit and the release tag explicitly. Do not rely on `--follow-tags` for lightweight tags.
 
 Example release flow:
 
@@ -114,7 +115,8 @@ npm run package
 git add package.json manifest.json README.md PRIVACY_POLICY.md CHROME_STORE_SUBMISSION.md .github/workflows/release.yml scripts docs
 git commit -m "chore: release vX.Y.Z"
 git tag vX.Y.Z
-git push origin main --follow-tags
+git push origin HEAD
+git push origin vX.Y.Z
 ```
 
 ## Chrome Web Store automation setup
