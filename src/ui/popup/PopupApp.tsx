@@ -118,22 +118,12 @@ function sourceModeClass(page: ExtractedPage): string {
   return "source-badge source-badge-auto";
 }
 
-function sourceModeDescription(page: ExtractedPage): string {
-  if (page.sourceMode === "manualArea") {
-    return "Focused capture from a hand-picked area on the page.";
-  }
-  if (page.sourceMode === "selection") {
-    return "Built from the text that was selected before opening the clipper.";
-  }
-  if (page.sourceMode === "fallback") {
-    return "Fallback extraction was used because the page structure was harder to parse.";
-  }
-  return "Automatic article extraction from the current page.";
-}
-
 export function PopupApp() {
   const [page, setPage] = useState<ExtractedPage | null>(null);
   const [mode, setMode] = useState<ViewMode>("reader");
+  // Use actual window height so standalone popups (manual area result)
+  // fill the available space instead of leaving dead space at the bottom.
+  const [popupHeight] = useState(() => Math.max(window.innerHeight, 600));
   const [actionState, setActionState] = useState<string>("");
   const [loadState, setLoadState] = useState<LoadState>({
     status: "idle",
@@ -179,14 +169,7 @@ export function PopupApp() {
     message: imaState.message,
     status: imaState.status
   });
-  const activePanelId = `${mode}-panel`;
   const tabs: ViewMode[] = ["reader", "markdown", "preview"];
-  const modeSummary =
-    mode === "reader"
-      ? "Readable article view for a quick quality check."
-      : mode === "markdown"
-        ? "Editable Markdown before copying or saving."
-        : "Final rendered preview of the Markdown output.";
 
   async function refreshKnowledgeBases(credentials: ImaCredentials) {
     setImaState({ status: "loading", message: "Loading ima targets..." });
@@ -473,7 +456,7 @@ export function PopupApp() {
   }
 
   return (
-    <main className="flex h-[600px] w-[560px] overflow-hidden bg-[#f7f7f4] text-zinc-950">
+    <main className="flex w-[560px] overflow-hidden bg-[#f7f7f4] text-zinc-950" style={{ height: popupHeight }}>
       <div className="flex min-h-0 w-full flex-col">
         <header className="shrink-0 px-5 pb-3 pt-4">
         <div className="panel-shell px-4 py-4">
@@ -486,12 +469,9 @@ export function PopupApp() {
                 </span>
                 {page ? <span className={sourceModeClass(page)}>{sourceModeLabel(page)}</span> : null}
               </div>
-              <h1 className="mt-3 line-clamp-2 text-balance text-[18px] font-semibold leading-6 text-zinc-950">
+              <h1 className="mt-2 line-clamp-1 text-balance text-[18px] font-semibold leading-6 text-zinc-950">
                 {page?.title ?? "Current page"}
               </h1>
-              <p className="mt-2 max-w-[360px] text-[12px] leading-5 text-zinc-600">
-                {page ? sourceModeDescription(page) : "Open the popup on any page to generate a clean Markdown capture."}
-              </p>
             </div>
             <button
               className="icon-button bg-white/80"
@@ -501,7 +481,7 @@ export function PopupApp() {
               onClick={() => void loadPage()}
               disabled={loadState.status === "loading"}
             >
-              <RefreshCw className={loadState.status === "loading" ? "animate-spin motion-reduce:animate-none" : ""} size={17} />
+              <RefreshCw className={loadState.status === "loading" ? "animate-spin motion-reduce:animate-none" : ""} size={16} />
             </button>
           </div>
           <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-zinc-500">
@@ -548,7 +528,6 @@ export function PopupApp() {
             </button>
           ))}
         </nav>
-        <p className="mt-2 px-1 text-[11px] leading-5 text-zinc-500">{modeSummary}</p>
         </div>
 
         <section className="min-h-0 flex-1 overflow-hidden px-5 pb-3">
@@ -690,15 +669,6 @@ export function PopupApp() {
 
         <footer className="shrink-0 px-5 pb-3 pt-2">
         <div className="ima-panel ima-panel-compact mb-3">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <div>
-              <p className="section-label">Save Destination</p>
-              <p className="supporting-copy">Choose where this clipped page should land in ima.</p>
-            </div>
-            <div className="supporting-copy" aria-live="polite">
-              {activePanelId === "markdown-panel" ? "Markdown is editable" : "Ready to export"}
-            </div>
-          </div>
           <div className="ima-action-row">
             <div className="ima-status-line">
               <span className="status-icon-chip shrink-0" aria-hidden="true">
@@ -781,7 +751,7 @@ export function PopupApp() {
           </div>
 
           {showImaSettings ? (
-            <div className="mt-3 grid gap-2">
+            <div className="mt-3 grid gap-2 border-t border-zinc-100 pt-3">
               <label className="settings-field">
                 <span className="settings-label">ima Client ID</span>
                 <input
@@ -819,10 +789,6 @@ export function PopupApp() {
         </div>
         <div className="action-tray">
           <div className="action-tray-group">
-            <div className="mr-2">
-              <p className="section-label">Capture</p>
-              <p className="supporting-copy">Adjust what gets clipped.</p>
-            </div>
             {shouldShowBackToAuto(page) ? (
               <button
                 className="secondary-button"
@@ -847,10 +813,6 @@ export function PopupApp() {
             </button>
           </div>
           <div className="action-tray-group">
-            <div className="mr-2 text-right">
-              <p className="section-label">Export</p>
-              <p className="supporting-copy">Copy or send the final result.</p>
-            </div>
             <button
               className={`primary-button compact-primary-button ${
                 actionState === "Markdown copied" ? "primary-button-copied" : ""
@@ -861,15 +823,15 @@ export function PopupApp() {
               title="Copy Markdown"
             >
               {actionState === "Markdown copied" ? <Check size={16} /> : <Clipboard size={16} />}
-              {actionState === "Markdown copied" ? "Copied" : "Copy Markdown"}
+              {actionState === "Markdown copied" ? "Copied" : "Copy"}
             </button>
             <button
               className="toolbar-button toolbar-button-subtle"
               type="button"
               onClick={copySourceUrl}
               disabled={!page?.url}
-              title="Copy Source URL"
-              aria-label="Copy source URL"
+              title="Copy URL"
+              aria-label="Copy URL"
             >
               <Link size={16} />
             </button>
