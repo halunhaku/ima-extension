@@ -229,7 +229,11 @@ function inspectUploadState(result) {
   }
 
   if (state === "FAILURE" || state === "NOT_FOUND") {
-    throw new Error(`Upload reached terminal state ${state}`);
+    const itemError = result?.itemError;
+    const detail = itemError
+      ? `: ${JSON.stringify(itemError)}`
+      : "";
+    throw new Error(`Upload reached terminal state ${state}${detail}`);
   }
 
   throw new Error(`Upload response has unexpected state ${state}`);
