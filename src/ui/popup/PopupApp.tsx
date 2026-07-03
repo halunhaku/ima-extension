@@ -13,6 +13,7 @@ import {
   Settings,
   Type
 } from "lucide-react";
+import type { KeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { extractPage } from "../../core/extraction/extractPage";
 import type { ExtractedPage, RawPageCapture } from "../../types/capture";
@@ -117,6 +118,19 @@ function sourceModeClass(page: ExtractedPage): string {
   return "source-badge source-badge-auto";
 }
 
+function sourceModeDescription(page: ExtractedPage): string {
+  if (page.sourceMode === "manualArea") {
+    return "Focused capture from a hand-picked area on the page.";
+  }
+  if (page.sourceMode === "selection") {
+    return "Built from the text that was selected before opening the clipper.";
+  }
+  if (page.sourceMode === "fallback") {
+    return "Fallback extraction was used because the page structure was harder to parse.";
+  }
+  return "Automatic article extraction from the current page.";
+}
+
 export function PopupApp() {
   const [page, setPage] = useState<ExtractedPage | null>(null);
   const [mode, setMode] = useState<ViewMode>("reader");
@@ -133,8 +147,22 @@ export function PopupApp() {
   const [clientIdInput, setClientIdInput] = useState("");
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState("");
+  const [recentAction, setRecentAction] = useState<"copy" | "save" | null>(null);
 
   const previewHtml = useMemo(() => renderMarkdownPreview(page?.markdown ?? ""), [page?.markdown]);
+  const markdownWordCount = useMemo(() => {
+    const text = page?.markdown.replace(/[#>*`_[\]\-]/g, " ").trim() ?? "";
+    if (!text) {
+      return 0;
+    }
+    return text.split(/\s+/).length;
+  }, [page?.markdown]);
+  const readerImageCount = useMemo(() => {
+    if (!page?.readerHtml) {
+      return 0;
+    }
+    return (page.readerHtml.match(/<img\b/gi) ?? []).length;
+  }, [page?.readerHtml]);
   const selectedKnowledgeBaseName = useMemo(
     () =>
       knowledgeBases.find((knowledgeBase) => knowledgeBase.id === selectedKnowledgeBaseId)?.name,
@@ -151,6 +179,14 @@ export function PopupApp() {
     message: imaState.message,
     status: imaState.status
   });
+  const activePanelId = `${mode}-panel`;
+  const tabs: ViewMode[] = ["reader", "markdown", "preview"];
+  const modeSummary =
+    mode === "reader"
+      ? "Readable article view for a quick quality check."
+      : mode === "markdown"
+        ? "Editable Markdown before copying or saving."
+        : "Final rendered preview of the Markdown output.";
 
   async function refreshKnowledgeBases(credentials: ImaCredentials) {
     setImaState({ status: "loading", message: "Loading ima targets..." });
@@ -241,6 +277,15 @@ export function PopupApp() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!recentAction) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => setRecentAction(null), 1800);
+    return () => window.clearTimeout(timer);
+  }, [recentAction]);
+
   async function copyMarkdown() {
     if (!page?.markdown) {
       return;
@@ -248,6 +293,7 @@ export function PopupApp() {
 
     await navigator.clipboard.writeText(page.markdown);
     setActionState("Markdown copied");
+    setRecentAction("copy");
     window.setTimeout(() => setActionState(""), 1600);
   }
 
@@ -340,6 +386,7 @@ export function PopupApp() {
         status: "ready",
         message: selectedKnowledgeBaseId ? "Saved to ima knowledge base." : "Saved as ima note."
       });
+      setRecentAction("save");
     } catch (error) {
       setImaState({
         status: "error",
@@ -398,60 +445,110 @@ export function PopupApp() {
     }
   }
 
+  function handleTabKeyDown(currentTab: ViewMode, event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft" && event.key !== "Home" && event.key !== "End") {
+      return;
+    }
+
+    event.preventDefault();
+
+    const currentIndex = tabs.indexOf(currentTab);
+    let nextIndex = currentIndex;
+
+    if (event.key === "ArrowRight") {
+      nextIndex = (currentIndex + 1) % tabs.length;
+    } else if (event.key === "ArrowLeft") {
+      nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = tabs.length - 1;
+    }
+
+    const nextTab = tabs[nextIndex];
+    setMode(nextTab);
+    window.requestAnimationFrame(() => {
+      document.getElementById(`${nextTab}-tab`)?.focus();
+    });
+  }
+
   return (
     <main className="flex h-[600px] w-[560px] overflow-hidden bg-[#f7f7f4] text-zinc-950">
       <div className="flex min-h-0 w-full flex-col">
-        <header className="shrink-0 px-5 pb-2 pt-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-500">
-              <span>ima Clipper</span>
-              {page ? <span className={sourceModeClass(page)}>{sourceModeLabel(page)}</span> : null}
+        <header className="shrink-0 px-5 pb-3 pt-4">
+        <div className="panel-shell px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-zinc-500">
+                <span className="brand-mark">
+                  <span className="brand-dot" aria-hidden="true" />
+                  ima Clipper
+                </span>
+                {page ? <span className={sourceModeClass(page)}>{sourceModeLabel(page)}</span> : null}
+              </div>
+              <h1 className="mt-3 line-clamp-2 text-balance text-[18px] font-semibold leading-6 text-zinc-950">
+                {page?.title ?? "Current page"}
+              </h1>
+              <p className="mt-2 max-w-[360px] text-[12px] leading-5 text-zinc-600">
+                {page ? sourceModeDescription(page) : "Open the popup on any page to generate a clean Markdown capture."}
+              </p>
             </div>
-            <h1 className="mt-2 line-clamp-2 text-[17px] font-semibold leading-6 text-zinc-950">
-              {page?.title ?? "Current page"}
-            </h1>
+            <button
+              className="icon-button bg-white/80"
+              type="button"
+              title="Refresh capture"
+              aria-label="Refresh capture"
+              onClick={() => void loadPage()}
+              disabled={loadState.status === "loading"}
+            >
+              <RefreshCw className={loadState.status === "loading" ? "animate-spin motion-reduce:animate-none" : ""} size={17} />
+            </button>
           </div>
-          <button
-            className="icon-button"
-            type="button"
-            title="Refresh capture"
-            onClick={() => void loadPage()}
-            disabled={loadState.status === "loading"}
-          >
-            <RefreshCw size={17} />
-          </button>
-        </div>
-        <div className="mt-3 flex min-w-0 items-center gap-2 text-[11px] text-zinc-500">
-          <span className="truncate">{page?.siteName ?? "No page loaded"}</span>
-          {page ? (
-            <>
-              <span className="text-zinc-300">/</span>
-              <span className="shrink-0">{new Date(page.capturedAt).toLocaleTimeString()}</span>
-            </>
-          ) : null}
-          {page?.siteRuleApplied ? (
-            <>
-              <span className="text-zinc-300">/</span>
-              <span className="site-rule-badge">{page.siteRuleApplied}</span>
-            </>
-          ) : null}
+          <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-zinc-500">
+            <span className="meta-pill max-w-full truncate">{page?.siteName ?? "No page loaded"}</span>
+            {page ? (
+              <span className="meta-pill shrink-0">
+                {new Date(page.capturedAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit"
+                })}
+              </span>
+            ) : null}
+            {page && markdownWordCount > 0 ? (
+              <span className="meta-pill shrink-0">{markdownWordCount} words</span>
+            ) : null}
+            {page && readerImageCount > 0 ? (
+              <span className="meta-pill shrink-0">{readerImageCount} images</span>
+            ) : null}
+            {page?.siteRuleApplied ? <span className="site-rule-badge">{page.siteRuleApplied}</span> : null}
+          </div>
+          <div className="accent-divider mt-4" />
         </div>
         </header>
 
         <div className="shrink-0 px-5 pb-2">
-        <nav className="grid grid-cols-3 gap-1 rounded-lg bg-zinc-200/60 p-1">
-          {(["reader", "markdown", "preview"] as const).map((tab) => (
+        <nav
+          className="grid grid-cols-3 gap-1 rounded-xl bg-[#f1efe8] p-1"
+          aria-label="View mode"
+          role="tablist"
+        >
+          {tabs.map((tab) => (
             <button
               key={tab}
               className={`tab-button ${mode === tab ? "tab-button-active" : ""}`}
               type="button"
+              id={`${tab}-tab`}
+              role="tab"
+              aria-selected={mode === tab}
+              aria-controls={`${tab}-panel`}
               onClick={() => setMode(tab)}
+              onKeyDown={(event) => handleTabKeyDown(tab, event)}
             >
               {tab === "reader" ? "Reader" : tab === "markdown" ? "Markdown" : "Preview"}
             </button>
           ))}
         </nav>
+        <p className="mt-2 px-1 text-[11px] leading-5 text-zinc-500">{modeSummary}</p>
         </div>
 
         <section className="min-h-0 flex-1 overflow-hidden px-5 pb-3">
@@ -476,14 +573,14 @@ export function PopupApp() {
         ) : null}
 
         {loadState.status === "loading" ? (
-          <div className="empty-state">
-            <RefreshCw className="animate-spin" size={22} />
+          <div className="empty-state" aria-live="polite">
+            <RefreshCw className="animate-spin motion-reduce:animate-none" size={22} />
             <p>{loadState.message}</p>
           </div>
         ) : null}
 
         {loadState.status === "error" ? (
-          <div className="empty-state">
+          <div className="empty-state" aria-live="polite">
             <FileText size={24} />
             <p>{loadState.message}</p>
             {isRecoveryMode ? (
@@ -535,14 +632,19 @@ export function PopupApp() {
         ) : null}
 
         {loadState.status === "ready" && page && !page.markdown.trim() ? (
-          <div className="empty-state">
+          <div className="empty-state" aria-live="polite">
             <FileText size={24} />
             <p>{loadState.message}</p>
           </div>
         ) : null}
 
         {page && mode === "reader" ? (
-          <div className="reader-shell">
+          <div
+            className="reader-shell content-surface"
+            id="reader-panel"
+            role="tabpanel"
+            aria-labelledby="reader-tab"
+          >
             <article
               className="reader-content"
               dangerouslySetInnerHTML={{ __html: page.readerHtml }}
@@ -551,28 +653,57 @@ export function PopupApp() {
         ) : null}
 
         {page && mode === "markdown" ? (
-          <textarea
-            className="h-full min-h-0 w-full resize-none overflow-auto rounded-lg bg-white p-4 font-mono text-xs leading-5 text-zinc-800 shadow-[0_1px_0_rgba(15,23,42,0.04)] outline-none focus:ring-2 focus:ring-zinc-200"
-            value={page.markdown}
-            onChange={(event) =>
-              setPage({
-                ...page,
-                markdown: event.target.value
-              })
-            }
-          />
+          <div
+            className="content-surface h-full rounded-xl border border-white/80 bg-white p-3 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+            id="markdown-panel"
+            role="tabpanel"
+            aria-labelledby="markdown-tab"
+          >
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="section-label">Editable Markdown</p>
+              <p className="supporting-copy">{markdownWordCount > 0 ? `${markdownWordCount} words ready to refine` : "Start editing the capture"}</p>
+            </div>
+            <textarea
+              aria-label="Markdown content"
+              className="h-[calc(100%-30px)] min-h-0 w-full resize-none overflow-auto rounded-lg bg-[#fbfaf7] p-4 font-mono text-xs leading-5 text-zinc-800 outline-none focus:ring-2 focus:ring-zinc-200"
+              value={page.markdown}
+              onChange={(event) =>
+                setPage({
+                  ...page,
+                  markdown: event.target.value
+                })
+              }
+            />
+          </div>
         ) : null}
 
         {page && mode === "preview" ? (
-          <article className="preview-content" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+          <article
+            className="preview-content content-surface"
+            id="preview-panel"
+            role="tabpanel"
+            aria-labelledby="preview-tab"
+            dangerouslySetInnerHTML={{ __html: previewHtml }}
+          />
         ) : null}
         </section>
 
         <footer className="shrink-0 px-5 pb-3 pt-2">
         <div className="ima-panel ima-panel-compact mb-3">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div>
+              <p className="section-label">Save Destination</p>
+              <p className="supporting-copy">Choose where this clipped page should land in ima.</p>
+            </div>
+            <div className="supporting-copy" aria-live="polite">
+              {activePanelId === "markdown-panel" ? "Markdown is editable" : "Ready to export"}
+            </div>
+          </div>
           <div className="ima-action-row">
             <div className="ima-status-line">
-              <Database size={15} className="shrink-0 text-emerald-700" />
+              <span className="status-icon-chip shrink-0" aria-hidden="true">
+                <Database size={15} />
+              </span>
               <div className="min-w-0">
                 <p
                   className={`truncate text-xs font-semibold ${
@@ -592,6 +723,7 @@ export function PopupApp() {
                 onChange={(event) => void chooseKnowledgeBase(event.target.value)}
                 disabled={imaState.status === "loading"}
                 title="ima target"
+                aria-label="ima target"
               >
                 <option value="">Note only</option>
                 {knowledgeBases.map((knowledgeBase) => (
@@ -607,6 +739,7 @@ export function PopupApp() {
                 className="toolbar-button"
                 type="button"
                 title="Refresh ima targets"
+                aria-label="Refresh ima targets"
                 onClick={() =>
                   imaSettings.credentials
                     ? void refreshKnowledgeBases(imaSettings.credentials)
@@ -625,11 +758,12 @@ export function PopupApp() {
                   : imaSaveButton.tone === "error"
                     ? "ima-save-button-error"
                     : ""
-              }`}
+              } ${recentAction === "save" ? "action-pulse" : ""}`}
               type="button"
               onClick={() => void saveCurrentPageToIma()}
               disabled={!page?.markdown || imaState.status === "loading"}
               title={imaSettings.credentials ? "Save to ima" : "Connect ima first"}
+              aria-label={imaSettings.credentials ? "Save to ima" : "Connect ima first"}
             >
               {imaSaveButton.tone === "success" ? <Check size={15} /> : <Send size={15} />}
               {imaSaveButton.label}
@@ -639,6 +773,7 @@ export function PopupApp() {
               className="toolbar-button"
               type="button"
               title="ima settings"
+              aria-label="Open ima settings"
               onClick={() => setShowImaSettings((value) => !value)}
             >
               <Settings size={16} />
@@ -647,22 +782,30 @@ export function PopupApp() {
 
           {showImaSettings ? (
             <div className="mt-3 grid gap-2">
-              <input
-                className="ima-input"
-                type="text"
-                value={clientIdInput}
-                onChange={(event) => setClientIdInput(event.target.value)}
-                placeholder="ima Client ID"
-                autoComplete="off"
-              />
-              <input
-                className="ima-input"
-                type="password"
-                value={apiKeyInput}
-                onChange={(event) => setApiKeyInput(event.target.value)}
-                placeholder={imaSettings.credentials ? "Paste API Key to update" : "ima API Key"}
-                autoComplete="off"
-              />
+              <label className="settings-field">
+                <span className="settings-label">ima Client ID</span>
+                <input
+                  className="ima-input"
+                  type="text"
+                  value={clientIdInput}
+                  onChange={(event) => setClientIdInput(event.target.value)}
+                  placeholder="Paste Client ID…"
+                  autoComplete="off"
+                  aria-label="ima Client ID"
+                />
+              </label>
+              <label className="settings-field">
+                <span className="settings-label">ima API Key</span>
+                <input
+                  className="ima-input"
+                  type="password"
+                  value={apiKeyInput}
+                  onChange={(event) => setApiKeyInput(event.target.value)}
+                  placeholder={imaSettings.credentials ? "Paste API Key to update…" : "Paste API Key…"}
+                  autoComplete="off"
+                  aria-label="ima API Key"
+                />
+              </label>
               <button
                 className="secondary-button justify-self-start"
                 type="button"
@@ -674,8 +817,12 @@ export function PopupApp() {
             </div>
           ) : null}
         </div>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1">
+        <div className="action-tray">
+          <div className="action-tray-group">
+            <div className="mr-2">
+              <p className="section-label">Capture</p>
+              <p className="supporting-copy">Adjust what gets clipped.</p>
+            </div>
             {shouldShowBackToAuto(page) ? (
               <button
                 className="secondary-button"
@@ -699,11 +846,15 @@ export function PopupApp() {
               Select Area
             </button>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="action-tray-group">
+            <div className="mr-2 text-right">
+              <p className="section-label">Export</p>
+              <p className="supporting-copy">Copy or send the final result.</p>
+            </div>
             <button
               className={`primary-button compact-primary-button ${
                 actionState === "Markdown copied" ? "primary-button-copied" : ""
-              }`}
+              } ${recentAction === "copy" ? "action-pulse" : ""}`}
               type="button"
               onClick={copyMarkdown}
               disabled={!page?.markdown}
@@ -713,36 +864,48 @@ export function PopupApp() {
               {actionState === "Markdown copied" ? "Copied" : "Copy Markdown"}
             </button>
             <button
-              className="toolbar-button"
+              className="toolbar-button toolbar-button-subtle"
               type="button"
               onClick={copySourceUrl}
               disabled={!page?.url}
               title="Copy Source URL"
+              aria-label="Copy source URL"
             >
               <Link size={16} />
             </button>
             <button
-              className="toolbar-button"
+              className="toolbar-button toolbar-button-subtle"
               type="button"
               onClick={copyTitle}
               disabled={!page?.title}
               title="Copy Title"
+              aria-label="Copy title"
             >
               <Type size={16} />
             </button>
             <button
-              className="toolbar-button"
+              className="toolbar-button toolbar-button-subtle"
               type="button"
               onClick={downloadCurrentMarkdown}
               disabled={!page?.markdown}
               title="Download Markdown"
+              aria-label="Download Markdown"
             >
               <Download size={16} />
             </button>
-            <button className="toolbar-button" type="button" onClick={openIma} title="Open ima">
+            <button
+              className="toolbar-button toolbar-button-subtle"
+              type="button"
+              onClick={openIma}
+              title="Open ima"
+              aria-label="Open ima"
+            >
               <ExternalLink size={16} />
             </button>
           </div>
+        </div>
+        <div className="sr-only" aria-live="polite">
+          {actionState || imaState.message}
         </div>
         </footer>
       </div>
