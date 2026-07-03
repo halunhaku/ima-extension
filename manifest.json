@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Web Clipper for ima",
   "description": "Extract web pages into clean Markdown for ima knowledge capture.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "action": {
     "default_title": "Web Clipper for ima",
     "default_popup": "index.html"
