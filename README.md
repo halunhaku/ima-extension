@@ -2,7 +2,19 @@
 
 A Chrome MV3 web clipper for turning web pages into clean Markdown and saving them to Tencent ima as notes or knowledge-base entries.
 
-![Web Clipper for ima popup](docs/assets/popup-reader.png)
+## Screenshots
+
+### Reader View
+
+![Reader View](docs/store-assets/screenshots/01-reader-capture-1280x800.png)
+
+### Manual Area Capture
+
+![Manual Area Capture](docs/store-assets/screenshots/02-manual-area-1280x800.png)
+
+### Save to ima
+
+![Save to ima](docs/store-assets/screenshots/03-save-to-ima-1280x800.png)
 
 ## What It Does
 
