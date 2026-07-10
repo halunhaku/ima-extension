@@ -42,13 +42,14 @@ test("submits certification notes", async () => {
 
 test("polls to success and exposes terminal failures", async () => {
   const states = ["InProgress", "Succeeded"];
+  const statuses = [202, 200];
   const result = await waitForOperation({
     productId: "p",
     clientId: "c",
     apiKey: "k",
     operationId: "o",
     kind: "upload",
-    fetchImpl: async () => response(200, { status: states.shift() }),
+    fetchImpl: async () => response(statuses.shift(), { status: states.shift() }),
     sleep: async () => {},
     intervalMs: 0
   });
