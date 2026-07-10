@@ -1,6 +1,6 @@
 {
   "name": "web-clipper-for-ima",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "type": "module",
   "engines": {
@@ -14,9 +14,10 @@
     "release:zip": "npm run package",
     "cws:publish": "node scripts/cws-publish.mjs",
     "cws:auth": "node scripts/cws-auth.mjs",
+    "edge:publish": "node scripts/edge-publish.mjs",
     "test": "npm run test:unit && npm run test:scripts",
     "test:unit": "vitest run",
-    "test:scripts": "node --test scripts/package-release.test.mjs scripts/release-version.test.mjs scripts/cws-api.test.mjs scripts/cws-publish.test.mjs scripts/cws-auth.test.mjs scripts/release-workflow.test.mjs",
+    "test:scripts": "node --test scripts/package-release.test.mjs scripts/release-version.test.mjs scripts/cws-api.test.mjs scripts/cws-publish.test.mjs scripts/cws-auth.test.mjs scripts/edge-api.test.mjs scripts/edge-publish.test.mjs scripts/release-workflow.test.mjs",
     "test:watch": "vitest",
     "screenshots": "node scripts/capture-screenshots.mjs"
   },

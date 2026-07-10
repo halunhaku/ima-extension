@@ -21,11 +21,11 @@
 
 ## Automation readiness smoke
 
-1. Confirm repository secrets exist: `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN`, `CWS_ITEM_ID`.
+1. Confirm repository secrets exist: `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN`, `CWS_ITEM_ID`, `EDGE_PRODUCT_ID`, `EDGE_CLIENT_ID`, `EDGE_API_KEY`.
 2. Confirm the tag to be released matches `package.json` and `manifest.json`.
 3. Confirm the release workflow still uploads `dist/web-clipper-for-ima-<version>.zip`.
-4. Confirm recovery mode `publish_github_release_only` is documented before the first live run.
+4. Confirm recovery mode `publish_github_release_only` is documented for both stores before the first live run.
 
 ## First live release guardrail
 
-Do not create the first production tag until the local automation smoke passes and the Chrome Web Store item already exists with the correct `CWS_ITEM_ID`.
+Do not create the first production tag until the local automation smoke passes and both store items already exist with the correct product IDs.

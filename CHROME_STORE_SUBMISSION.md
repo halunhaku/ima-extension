@@ -51,6 +51,9 @@ Expected repository secrets:
 - `CWS_CLIENT_SECRET`
 - `CWS_REFRESH_TOKEN`
 - `CWS_ITEM_ID`
+- `EDGE_PRODUCT_ID`
+- `EDGE_CLIENT_ID`
+- `EDGE_API_KEY`
 
 Release boundary:
 
@@ -64,19 +67,19 @@ Normal release:
 3. Run `npm run package`
 4. Commit the versioned files
 5. Push tag `vX.Y.Z`
-6. Let GitHub Actions create the draft release, upload `dist/web-clipper-for-ima-X.Y.Z.zip`, and submit the store item
+6. Let GitHub Actions create the draft release, upload `dist/web-clipper-for-ima-X.Y.Z.zip`, and submit both store items
 
 ## Retry and recovery
 
-If the workflow fails before store submission acceptance, fix the issue and rerun the workflow against the existing tag in normal mode.
+If the workflow fails before both store submissions are accepted, fix the issue and rerun the workflow against the existing tag in normal mode.
 
-If the store submission was accepted but GitHub Release publication failed:
+If both store submissions were accepted but GitHub Release publication failed:
 
-- manually confirm in the Chrome Web Store dashboard that the submission was accepted
+- manually confirm in both the Chrome Web Store and Edge Add-ons dashboards that the submissions were accepted
 - rerun the workflow with the same `tag`
 - set `publish_github_release_only` to `true`
 
-That recovery mode skips Chrome Web Store submission and publishes the existing draft GitHub Release only.
+That recovery mode skips both store submissions and publishes the existing draft GitHub Release only.
 
 ## Smoke checklist
 
