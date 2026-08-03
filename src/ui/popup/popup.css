@@ -7,6 +7,9 @@
   --ima-accent-strong: #087f59;
   --ima-accent-soft: #e7f7ef;
   --ima-ink: #0f172a;
+  /* Apple-style system gray backdrop, not paper */
+  --ima-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ima-hairline: rgba(17, 24, 39, 0.09);
 }
 
 html,
@@ -17,8 +20,9 @@ body {
   height: 100%;
   overflow: hidden;
   background:
-    radial-gradient(circle at top right, rgba(16, 185, 129, 0.14), transparent 34%),
-    linear-gradient(180deg, #f8f6ef 0%, #f4f2ea 100%);
+    radial-gradient(90% 60% at 100% 0%, rgba(15, 159, 110, 0.11), transparent 58%),
+    radial-gradient(85% 55% at 0% 100%, rgba(15, 159, 110, 0.09), transparent 55%),
+    linear-gradient(180deg, #f7f7f8 0%, #f0f0f2 100%);
   color-scheme: light;
 }
 
@@ -33,34 +37,124 @@ body {
   box-sizing: border-box;
 }
 
+/* Fine, quiet scrollbars */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(17, 24, 39, 0.16);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(17, 24, 39, 0.3);
+}
+
+/* One focus language for the whole surface */
+:is(
+    .icon-button,
+    .toolbar-button,
+    .icon-text-button,
+    .secondary-button,
+    .primary-button,
+    .tab-button
+  ):focus-visible {
+  outline: 2px solid rgba(15, 159, 110, 0.55);
+  outline-offset: 2px;
+}
+
 .icon-button {
-  @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f7f4] disabled:cursor-not-allowed disabled:opacity-40;
+  @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-zinc-500 hover:bg-black/5 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-40;
+  transition:
+    transform 100ms ease-out,
+    background-color 140ms ease-out,
+    color 140ms ease-out;
+}
+
+.icon-button:active:not(:disabled) {
+  transform: scale(0.94);
 }
 
 .toolbar-button {
-  @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f7f4] disabled:cursor-not-allowed disabled:opacity-35;
+  @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-zinc-500 hover:bg-black/5 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-35;
+  transition:
+    transform 100ms ease-out,
+    background-color 140ms ease-out,
+    color 140ms ease-out;
+}
+
+.toolbar-button:active:not(:disabled) {
+  transform: scale(0.94);
 }
 
 .toolbar-button-subtle {
-  @apply text-zinc-400 hover:text-zinc-700;
+  @apply text-zinc-500 hover:text-zinc-800;
+}
+
+/* Segmented control with a sliding, material indicator */
+.tab-nav {
+  @apply relative grid grid-cols-3 gap-1 rounded-[12px] p-1;
+  background: rgba(17, 24, 39, 0.05);
+}
+
+.tab-indicator {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: calc((100% - 16px) / 3);
+  height: calc(100% - 8px);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(17, 24, 39, 0.07),
+    0 4px 14px rgba(17, 24, 39, 0.06);
+  transition: transform 300ms var(--ima-spring);
+  will-change: transform;
 }
 
 .tab-button {
-  @apply h-9 rounded-md px-3 text-xs font-semibold text-zinc-500 transition-colors hover:bg-white/70 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f1efe8];
+  @apply relative z-10 h-9 rounded-[8px] px-3 text-xs font-semibold text-zinc-500 hover:text-zinc-800;
+  transition: color 140ms ease-out;
 }
 
 .tab-button-active {
-  @apply bg-white text-zinc-950 shadow-sm shadow-zinc-200/70;
+  @apply text-zinc-950;
 }
 
+/* Dark, glass-edged primary — pressed feedback on pointer-down */
 .primary-button {
-  @apply inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-zinc-300;
-  background: linear-gradient(135deg, var(--ima-ink) 0%, #111827 100%);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  @apply inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-[10px] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed;
+  background: linear-gradient(180deg, #232326 0%, #161618 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.16),
+    0 10px 24px rgba(17, 24, 39, 0.16);
+  transition:
+    transform 100ms ease-out,
+    background-color 140ms ease-out,
+    box-shadow 140ms ease-out;
 }
 
 .primary-button:hover {
-  background: linear-gradient(135deg, #1f2937 0%, #0f172a 100%);
+  background: linear-gradient(180deg, #333336 0%, #1f1f22 100%);
+}
+
+.primary-button:active:not(:disabled) {
+  transform: scale(0.97);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.12),
+    0 4px 12px rgba(17, 24, 39, 0.12);
+}
+
+.primary-button:disabled {
+  background: #d9d9de;
+  box-shadow: none;
 }
 
 .compact-primary-button {
@@ -68,21 +162,35 @@ body {
 }
 
 .secondary-button {
-  @apply inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-md px-3 text-xs font-semibold text-zinc-700 transition-colors hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f7f4] disabled:cursor-not-allowed disabled:opacity-40;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(244, 244, 245, 0.96));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  @apply inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-[9px] px-3 text-xs font-semibold text-zinc-700 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-40;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 2px rgba(17, 24, 39, 0.06);
+  transition:
+    transform 100ms ease-out,
+    background-color 140ms ease-out,
+    color 140ms ease-out;
 }
 
 .secondary-button:hover {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(238, 238, 240, 1));
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.secondary-button:active:not(:disabled) {
+  transform: scale(0.97);
+  background: rgba(240, 240, 242, 0.95);
 }
 
 .ima-panel {
-  @apply rounded-xl border bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.05)];
-  border-color: rgba(15, 159, 110, 0.18);
-  background:
-    linear-gradient(180deg, rgba(231, 247, 239, 0.6), rgba(255, 255, 255, 0.96) 28%),
-    white;
+  @apply rounded-[16px] p-3;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 1px 2px rgba(17, 24, 39, 0.03),
+    0 10px 28px rgba(17, 24, 39, 0.06);
+  backdrop-filter: blur(28px) saturate(180%);
 }
 
 .ima-panel-compact {
@@ -99,7 +207,18 @@ body {
 
 .ima-input,
 .ima-select {
-  @apply h-9 min-w-0 rounded-md border border-zinc-200 bg-white px-3 text-xs text-zinc-800 outline-none transition-colors placeholder:text-zinc-400 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-400;
+  @apply h-9 min-w-0 rounded-[10px] border border-black/10 bg-white/90 px-3 text-xs text-zinc-800 placeholder:text-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-400;
+  transition:
+    border-color 140ms ease-out,
+    box-shadow 140ms ease-out,
+    background-color 140ms ease-out;
+}
+
+.ima-input:focus,
+.ima-select:focus {
+  border-color: rgba(15, 159, 110, 0.55);
+  box-shadow: 0 0 0 3.5px rgba(15, 159, 110, 0.13);
+  outline: none;
 }
 
 .ima-select {
@@ -115,15 +234,31 @@ body {
 }
 
 .ima-save-button-success {
-  background: linear-gradient(135deg, var(--ima-accent) 0%, var(--ima-accent-strong) 100%);
+  background: linear-gradient(180deg, #12a877 0%, #0d8f62 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.12),
+    0 8px 20px rgba(15, 159, 110, 0.28);
 }
 
 .ima-save-button-error {
-  @apply bg-red-700 hover:bg-red-700;
+  background: linear-gradient(180deg, #d64545 0%, #b93a3a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.12),
+    0 8px 20px rgba(217, 69, 69, 0.22);
 }
 
 .icon-text-button {
-  @apply inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f7f7f4] disabled:cursor-not-allowed disabled:opacity-35;
+  @apply inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[8px] px-2 text-xs font-medium text-zinc-500 hover:bg-black/5 hover:text-zinc-900 disabled:cursor-not-allowed disabled:opacity-35;
+  transition:
+    transform 100ms ease-out,
+    background-color 140ms ease-out,
+    color 140ms ease-out;
+}
+
+.icon-text-button:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 .source-badge {
@@ -133,6 +268,7 @@ body {
 .source-badge-auto {
   @apply text-zinc-700;
   background: rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.06);
 }
 
 .source-badge-selection {
@@ -155,31 +291,58 @@ body {
 }
 
 .primary-button-copied {
-  @apply bg-emerald-700 hover:bg-emerald-700;
+  background: linear-gradient(180deg, #0f9f6e 0%, #0d8f62 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 1px 2px rgba(0, 0, 0, 0.12),
+    0 8px 20px rgba(15, 159, 110, 0.26);
 }
 
 .empty-state {
   @apply flex h-full min-h-[300px] flex-col items-center justify-center gap-3 text-center text-sm text-zinc-500;
 }
 
+.empty-state svg {
+  opacity: 0.55;
+}
+
 .status-note {
-  @apply flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900;
+  @apply flex items-start gap-2.5 rounded-[14px] px-3.5 py-3 text-xs leading-5 text-amber-900;
+  background: rgba(255, 249, 235, 0.85);
+  border: 1px solid rgba(255, 200, 87, 0.28);
 }
 
 .status-note-manual {
   @apply bg-emerald-50 text-emerald-900;
+  background: rgba(231, 247, 239, 0.85);
+  border-color: rgba(15, 159, 110, 0.18);
 }
 
 .reader-shell {
-  @apply mx-auto h-full max-w-[480px] overflow-auto rounded-xl border border-white/80 bg-white px-5 py-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)];
+  @apply mx-auto h-full max-w-[480px] overflow-auto rounded-[16px] border px-5 py-5;
+  border-color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.99));
+  box-shadow:
+    0 1px 2px rgba(17, 24, 39, 0.03),
+    0 14px 36px rgba(17, 24, 39, 0.07);
+}
+
+.markdown-shell {
+  @apply h-full rounded-[16px] border border-white/90 bg-white p-3;
+  box-shadow:
+    0 1px 2px rgba(17, 24, 39, 0.03),
+    0 14px 36px rgba(17, 24, 39, 0.07);
 }
 
 .content-surface {
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 1));
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 1));
 }
 
+/* Apple reading typography: tight leading + negative tracking on display,
+   relaxed body; weight carries the hierarchy */
 .reader-content {
-  @apply text-[15px] leading-7 text-zinc-800;
+  @apply text-[15px] leading-[1.7] text-zinc-800;
+  letter-spacing: 0.003em;
 }
 
 .reader-content h1,
@@ -190,14 +353,17 @@ body {
 
 .reader-content h1 {
   @apply text-[24px];
+  letter-spacing: -0.022em;
 }
 
 .reader-content h2 {
   @apply text-[19px];
+  letter-spacing: -0.016em;
 }
 
 .reader-content h3 {
   @apply text-[17px];
+  letter-spacing: -0.01em;
 }
 
 .reader-content p {
@@ -225,19 +391,27 @@ body {
 }
 
 .preview-content {
-  @apply mx-auto h-full max-w-[480px] overflow-auto rounded-xl border border-white/80 bg-white px-5 py-5 text-sm leading-7 text-zinc-800 shadow-[0_14px_40px_rgba(15,23,42,0.06)];
+  @apply mx-auto h-full max-w-[480px] overflow-auto rounded-[16px] border px-5 py-5 text-sm leading-7 text-zinc-800;
+  border-color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(255, 255, 255, 0.99));
+  box-shadow:
+    0 1px 2px rgba(17, 24, 39, 0.03),
+    0 14px 36px rgba(17, 24, 39, 0.07);
 }
 
 .preview-content h1 {
   @apply mb-4 mt-1 text-2xl font-semibold leading-tight text-zinc-950;
+  letter-spacing: -0.02em;
 }
 
 .preview-content h2 {
   @apply mb-3 mt-5 text-xl font-semibold leading-tight text-zinc-950;
+  letter-spacing: -0.015em;
 }
 
 .preview-content h3 {
   @apply mb-2 mt-4 text-lg font-semibold leading-tight text-zinc-950;
+  letter-spacing: -0.01em;
 }
 
 .preview-content p {
@@ -264,15 +438,22 @@ body {
   @apply bg-transparent p-0 text-inherit;
 }
 
+/* Translucent header material over the ambient gradient */
 .panel-shell {
-  @apply rounded-[20px] border border-white/70 shadow-[0_18px_50px_rgba(15,23,42,0.07)];
-  background:
-    radial-gradient(circle at top right, rgba(15, 159, 110, 0.16), transparent 34%),
-    linear-gradient(180deg, #f9f7f1 0%, #f4f2ea 100%);
+  @apply rounded-[22px];
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.38));
+  box-shadow:
+    0 1px 2px rgba(17, 24, 39, 0.03),
+    0 18px 44px rgba(17, 24, 39, 0.06);
+  backdrop-filter: blur(28px) saturate(180%);
 }
 
 .meta-pill {
-  @apply inline-flex items-center rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-medium text-zinc-600 ring-1 ring-zinc-200/70 backdrop-blur-sm;
+  @apply inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium text-zinc-600;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.06);
+  backdrop-filter: blur(12px);
 }
 
 .section-label {
@@ -292,7 +473,13 @@ body {
 }
 
 .action-tray {
-  @apply flex items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/60 px-3 py-2 shadow-[0_12px_30px_rgba(15,23,42,0.05)] backdrop-blur-sm;
+  @apply flex items-center justify-between gap-3 rounded-[16px] px-3 py-2;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 1px 2px rgba(17, 24, 39, 0.03),
+    0 12px 30px rgba(17, 24, 39, 0.06);
+  backdrop-filter: blur(24px) saturate(180%);
 }
 
 .action-tray-group {
@@ -315,16 +502,26 @@ body {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .action-pulse {
-    animation: none;
+/* Content panels arrive with a whisper of downward motion */
+.panel-enter {
+  animation: panel-enter 220ms var(--ima-spring);
+}
+
+@keyframes panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
 .brand-mark {
   @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold tracking-[0.08em] text-zinc-700 uppercase;
-  background: rgba(255, 255, 255, 0.84);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.06);
 }
 
 .brand-dot {
@@ -332,7 +529,7 @@ body {
   height: 8px;
   border-radius: 9999px;
   background: linear-gradient(135deg, var(--ima-accent) 0%, #34d399 100%);
-  box-shadow: 0 0 0 4px rgba(15, 159, 110, 0.12);
+  box-shadow: 0 0 0 4px rgba(15, 159, 110, 0.14);
 }
 
 .status-icon-chip {
@@ -344,4 +541,16 @@ body {
 .accent-divider {
   height: 1px;
   background: linear-gradient(90deg, rgba(15, 159, 110, 0.22), rgba(15, 159, 110, 0));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-pulse {
+    animation: none;
+  }
+  .panel-enter {
+    animation: none;
+  }
+  .tab-indicator {
+    transition: none;
+  }
 }

@@ -456,10 +456,10 @@ export function PopupApp() {
   }
 
   return (
-    <main className="flex w-[560px] overflow-hidden bg-[#f7f7f4] text-zinc-950" style={{ height: popupHeight }}>
+    <main className="flex w-[560px] overflow-hidden bg-transparent text-zinc-950" style={{ height: popupHeight }}>
       <div className="flex min-h-0 w-full flex-col">
         <header className="shrink-0 px-5 pb-3 pt-4">
-        <div className="panel-shell px-4 py-4">
+        <div className="panel-shell px-4 py-3.5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-zinc-500">
@@ -469,7 +469,7 @@ export function PopupApp() {
                 </span>
                 {page ? <span className={sourceModeClass(page)}>{sourceModeLabel(page)}</span> : null}
               </div>
-              <h1 className="mt-2 line-clamp-1 text-balance text-[18px] font-semibold leading-6 text-zinc-950">
+              <h1 className="mt-1.5 line-clamp-1 text-balance text-[18px] font-semibold leading-[1.3] tracking-[-0.012em] text-zinc-950">
                 {page?.title ?? "Current page"}
               </h1>
             </div>
@@ -484,7 +484,7 @@ export function PopupApp() {
               <RefreshCw className={loadState.status === "loading" ? "animate-spin motion-reduce:animate-none" : ""} size={16} />
             </button>
           </div>
-          <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-zinc-500">
+          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-zinc-500">
             <span className="meta-pill max-w-full truncate">{page?.siteName ?? "No page loaded"}</span>
             {page ? (
               <span className="meta-pill shrink-0">
@@ -502,16 +502,25 @@ export function PopupApp() {
             ) : null}
             {page?.siteRuleApplied ? <span className="site-rule-badge">{page.siteRuleApplied}</span> : null}
           </div>
-          <div className="accent-divider mt-4" />
+          <div className="accent-divider mt-3" />
         </div>
         </header>
 
         <div className="shrink-0 px-5 pb-2">
         <nav
-          className="grid grid-cols-3 gap-1 rounded-xl bg-[#f1efe8] p-1"
+          className="tab-nav"
           aria-label="View mode"
           role="tablist"
         >
+          <div
+            aria-hidden="true"
+            className="tab-indicator"
+            style={{
+              transform: `translateX(calc(${tabs.indexOf(mode) * 100}% + ${
+                tabs.indexOf(mode) * 4
+              }px))`
+            }}
+          />
           {tabs.map((tab) => (
             <button
               key={tab}
@@ -619,7 +628,7 @@ export function PopupApp() {
 
         {page && mode === "reader" ? (
           <div
-            className="reader-shell content-surface"
+            className="reader-shell content-surface panel-enter"
             id="reader-panel"
             role="tabpanel"
             aria-labelledby="reader-tab"
@@ -633,7 +642,7 @@ export function PopupApp() {
 
         {page && mode === "markdown" ? (
           <div
-            className="content-surface h-full rounded-xl border border-white/80 bg-white p-3 shadow-[0_14px_40px_rgba(15,23,42,0.06)]"
+            className="content-surface markdown-shell panel-enter"
             id="markdown-panel"
             role="tabpanel"
             aria-labelledby="markdown-tab"
@@ -644,7 +653,7 @@ export function PopupApp() {
             </div>
             <textarea
               aria-label="Markdown content"
-              className="h-[calc(100%-30px)] min-h-0 w-full resize-none overflow-auto rounded-lg bg-[#fbfaf7] p-4 font-mono text-xs leading-5 text-zinc-800 outline-none focus:ring-2 focus:ring-zinc-200"
+              className="h-[calc(100%-30px)] min-h-0 w-full resize-none overflow-auto rounded-lg bg-zinc-50/80 p-4 font-mono text-xs leading-5 text-zinc-800 outline-none focus:ring-2 focus:ring-emerald-200/70"
               value={page.markdown}
               onChange={(event) =>
                 setPage({
@@ -658,7 +667,7 @@ export function PopupApp() {
 
         {page && mode === "preview" ? (
           <article
-            className="preview-content content-surface"
+            className="preview-content content-surface panel-enter"
             id="preview-panel"
             role="tabpanel"
             aria-labelledby="preview-tab"
@@ -751,7 +760,7 @@ export function PopupApp() {
           </div>
 
           {showImaSettings ? (
-            <div className="mt-3 grid gap-2 border-t border-zinc-100 pt-3">
+            <div className="mt-3 grid gap-2 border-t border-black/5 pt-3">
               <label className="settings-field">
                 <span className="settings-label">ima Client ID</span>
                 <input
