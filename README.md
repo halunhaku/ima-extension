@@ -1,3 +1,12 @@
+<!-- project-status:start -->
+## 项目状态与入口
+
+- **维护状态**：按需维护 · 根据实际需求修复与更新。
+- **项目入口**：本地安装见下方「Install locally」，打包与验证见「Quality checks」。
+- **项目导航**：[全部项目与维护安排](https://github.com/halunhaku)。
+
+<!-- project-status:end -->
+
 # Web Clipper for ima
 
 A Chrome MV3 web clipper for turning web pages into clean Markdown and saving them to Tencent ima as notes or knowledge-base entries.
