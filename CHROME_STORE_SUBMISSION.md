@@ -43,17 +43,7 @@ Supporting policy: [PRIVACY_POLICY.md](/Users/halunhaku/projects/ima-extension/P
 
 ## Release automation
 
-The repository release workflow is in `.github/workflows/release.yml`.
-
-Expected repository secrets:
-
-- `CWS_CLIENT_ID`
-- `CWS_CLIENT_SECRET`
-- `CWS_REFRESH_TOKEN`
-- `CWS_ITEM_ID`
-- `EDGE_PRODUCT_ID`
-- `EDGE_CLIENT_ID`
-- `EDGE_API_KEY`
+The repository release workflow is in `.github/workflows/release.yml`. It builds and publishes the GitHub Release only; it holds no store credentials and never calls a store API.
 
 Release boundary:
 
@@ -67,19 +57,17 @@ Normal release:
 3. Run `npm run package`
 4. Commit the versioned files
 5. Push tag `vX.Y.Z`
-6. Let GitHub Actions create the draft release, upload `dist/web-clipper-for-ima-X.Y.Z.zip`, and submit both store items
+6. Let GitHub Actions run the tests and validation, then create the public Release with `web-clipper-for-ima-X.Y.Z.zip` attached
 
-## Retry and recovery
+## Manual Chrome Web Store upload
 
-If the workflow fails before both store submissions are accepted, fix the issue and rerun the workflow against the existing tag in normal mode.
+1. Open the GitHub Release for `vX.Y.Z` and download `web-clipper-for-ima-X.Y.Z.zip`.
+2. In the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole), open the `Web Clipper for ima` item and upload the ZIP under **Package → Upload new package**.
+3. Paste the listing copy above and submit the item for review.
 
-If both store submissions were accepted but GitHub Release publication failed:
+## Retry
 
-- manually confirm in both the Chrome Web Store and Edge Add-ons dashboards that the submissions were accepted
-- rerun the workflow with the same `tag`
-- set `publish_github_release_only` to `true`
-
-That recovery mode skips both store submissions and publishes the existing draft GitHub Release only.
+If the workflow failed, fix the failure and rerun the workflow for the same tag; the rerun refreshes the Release asset when the tag already has one. A failed store upload is retried by uploading the ZIP again from the dashboard.
 
 ## Smoke checklist
 

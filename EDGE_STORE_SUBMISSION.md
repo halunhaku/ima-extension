@@ -1,27 +1,23 @@
 # Microsoft Edge Add-ons submission
 
-Web Clipper for ima uses the official Microsoft Edge Add-ons Update REST API v1.1 to update its existing extension.
+Web Clipper for ima ships the same extension ZIP to Chrome and Edge. Store submission is manual: the release workflow only builds the ZIP and attaches it to the GitHub Release.
 
-## GitHub Actions secrets
+## Manual upload
 
-Configure these repository secrets under **Settings → Secrets and variables → Actions**:
+1. Push the `vX.Y.Z` tag and wait for the `Release` workflow to finish.
+2. Download `web-clipper-for-ima-X.Y.Z.zip` from the GitHub Release for that tag.
+3. In [Microsoft Partner Center](https://partner.microsoft.com/dashboard/microsoftedge), open the product, upload the ZIP to the existing submission, and submit it.
 
-- `EDGE_PRODUCT_ID`: Product ID from Partner Center.
-- `EDGE_CLIENT_ID`: Client ID from **Microsoft Edge → Publish API**.
-- `EDGE_API_KEY`: current API key from the same page.
-
-Never commit these values. API keys expire; rotate `EDGE_API_KEY` before its Partner Center expiry date.
+No Edge credentials belong in the repository or in GitHub Actions secrets.
 
 ## Release behavior
 
-A `vX.Y.Z` tag builds one deterministic ZIP for Chrome and Edge. The workflow uploads it to Edge Add-ons, waits for package validation, submits the draft, and waits for the API to accept the review submission. Store certification remains asynchronous.
+A `vX.Y.Z` tag builds one deterministic ZIP for Chrome and Edge and attaches it to the public GitHub Release. Nothing is uploaded to Partner Center automatically, and certification remains asynchronous.
 
-The Update REST API only updates an existing product. Initial creation and listing metadata changes remain manual in Partner Center.
+Partner Center owns the initial product creation and any listing metadata changes.
 
-## Retry and recovery
+## Retry
 
-Run **Actions → Release → Run workflow** with the existing tag to retry a failed submission. Check both dashboards first: if one store accepted and the other failed, a full retry can attempt the accepted store submission again.
-
-Use `publish_github_release_only` only when an existing GitHub Release is still a draft and both Chrome Web Store and Edge Add-ons have accepted their review submissions. This mode skips both store APIs.
+If the workflow failed, fix the failure and rerun **Actions → Release → Run workflow** with the same tag; the rerun refreshes the Release asset when the tag already has one. A failed store upload is retried by uploading the ZIP again from Partner Center.
 
 Official documentation: <https://learn.microsoft.com/en-us/microsoft-edge/extensions/update/api/using-addons-api>

@@ -5,9 +5,11 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const workflowPath = path.join(scriptDir, "..", ".github", "workflows", "release.yml");
-const chromeGuidePath = path.join(scriptDir, "..", "CHROME_STORE_SUBMISSION.md");
-const edgeGuidePath = path.join(scriptDir, "..", "EDGE_STORE_SUBMISSION.md");
+const repoRoot = path.join(scriptDir, "..");
+const workflowPath = path.join(repoRoot, ".github", "workflows", "release.yml");
+const readmePath = path.join(repoRoot, "README.md");
+const chromeGuidePath = path.join(repoRoot, "CHROME_STORE_SUBMISSION.md");
+const edgeGuidePath = path.join(repoRoot, "EDGE_STORE_SUBMISSION.md");
 
 async function readWorkflow() {
   return readFile(workflowPath, "utf8");
@@ -19,89 +21,65 @@ function positionOf(source, token) {
   return position;
 }
 
-test("release workflow has only the intended triggers and repository-wide controls", async () => {
+function sectionOf(source, heading) {
+  const start = positionOf(source, heading);
+  const next = source.indexOf("\n## ", start + heading.length);
+  return next === -1 ? source.slice(start) : source.slice(start, next);
+}
+
+function stepNames(workflow) {
+  return [...workflow.matchAll(/^      - name: (.+)$/gm)].map((match) => match[1]);
+}
+
+test("release workflow has only the tag triggers and one retry input", async () => {
   const workflow = await readWorkflow();
 
   assert.match(workflow, /^name: Release$/m);
-  assert.match(workflow, /^on:\n  push:\n    tags:\n      - "v\*"\n  workflow_dispatch:\n    inputs:/m);
-  assert.match(workflow, /^      tag:\n        description: .*\n        required: true\n        type: string$/m);
-  assert.match(workflow, /^      publish_github_release_only:\n        description: .*Chrome.*Edge.*\n        required: false\n        default: false\n        type: boolean$/m);
-  assert.doesNotMatch(workflow, /pull_request/);
+  assert.match(
+    workflow,
+    /^on:\n  push:\n    tags:\n      - "v\*"\n  workflow_dispatch:\n    inputs:\n      tag:\n        description: .+\n        required: true\n        type: string$/m
+  );
+  assert.doesNotMatch(workflow, /pull_request|workflow_run|schedule:/);
+  assert.equal(
+    (workflow.match(/^        type: /gm) ?? []).length,
+    1,
+    "workflow_dispatch must expose the tag input only"
+  );
+  assert.doesNotMatch(workflow, /publish_github_release_only/);
+});
+
+test("release workflow keeps the repository-wide controls for a single release at a time", async () => {
+  const workflow = await readWorkflow();
+
   assert.match(workflow, /^permissions:\n  contents: write$/m);
-  assert.match(workflow, /^concurrency:\n  group: browser-store-release\n  queue: max\n  cancel-in-progress: false$/m);
+  assert.match(workflow, /^concurrency:\n  group: release\n  queue: max\n  cancel-in-progress: false$/m);
   assert.match(workflow, /^jobs:\n  release:\n    runs-on: ubuntu-latest\n    timeout-minutes: 30$/m);
 });
 
-test("release workflow resolves and validates an exact tag before checking it out", async () => {
+test("release workflow resolves an exact tag and checks that tag out before building", async () => {
   const workflow = await readWorkflow();
 
-  assert.match(workflow, /REQUESTED_TAG: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.tag \|\| github\.ref_name \}\}/);
+  assert.match(
+    workflow,
+    /REQUESTED_TAG: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.tag \|\| github\.ref_name \}\}/
+  );
   assert.match(workflow, /\^v\[0-9\]\+\\\.\[0-9\]\+\\\.\[0-9\]\+\$/);
   assert.match(workflow, /echo "tag=\$REQUESTED_TAG" >> "\$GITHUB_OUTPUT"/);
   assert.match(workflow, /echo "version=\$\{REQUESTED_TAG#v\}" >> "\$GITHUB_OUTPUT"/);
-  assert.match(workflow, /uses: actions\/checkout@v4\n        with:\n          fetch-depth: 0\n          ref: refs\/tags\/\$\{\{ steps\.release\.outputs\.tag \}\}/);
+  assert.match(
+    workflow,
+    /uses: actions\/checkout@v4\n        with:\n          fetch-depth: 0\n          ref: refs\/tags\/\$\{\{ steps\.release\.outputs\.tag \}\}/
+  );
   assert.match(workflow, /uses: actions\/setup-node@v4\n        with:\n          node-version: 20\n          cache: npm/);
-  assert.match(workflow, /- name: Install dependencies\n        if: steps\.release\.outputs\.recovery != 'true'\n        run: npm ci/);
+  assert.match(workflow, /- name: Install dependencies\n        run: npm ci/);
+  assert.doesNotMatch(workflow, /recovery/);
 });
 
-test("release workflow verifies, packages, publishes both stores, then publishes the release", async () => {
+test("release workflow runs verify, test, validate, package, then the Release step in that order", async () => {
   const workflow = await readWorkflow();
-  const orderedTokens = [
-    'node scripts/release-version.mjs "$TAG"',
-    "npm test",
-    "npm run validate",
-    "npm run package",
-    'gh release create "$TAG" --verify-tag --draft --title "Web Clipper for ima $TAG" --notes "Automated release for $TAG."',
-    'gh release upload "$TAG" "dist/web-clipper-for-ima-$VERSION.zip" --clobber',
-    'npm run cws:publish -- "dist/web-clipper-for-ima-${{ steps.release.outputs.version }}.zip"',
-    'npm run edge:publish -- "dist/web-clipper-for-ima-${{ steps.release.outputs.version }}.zip"',
-    'gh release edit "$TAG" --draft=false'
-  ];
-  const positions = orderedTokens.map((token) => positionOf(workflow, token));
-  assert.deepEqual(positions, [...positions].sort((a, b) => a - b));
-});
 
-test("store secrets are present and confined to their respective steps", async () => {
-  const workflow = await readWorkflow();
-  const chromeNames = ["CWS_CLIENT_ID", "CWS_CLIENT_SECRET", "CWS_REFRESH_TOKEN", "CWS_ITEM_ID"];
-  const edgeNames = ["EDGE_PRODUCT_ID", "EDGE_CLIENT_ID", "EDGE_API_KEY"];
-  const chromeStart = positionOf(workflow, "- name: Publish to Chrome Web Store");
-  const edgeStart = positionOf(workflow, "- name: Publish to Microsoft Edge Add-ons");
-  const githubStart = positionOf(workflow, "- name: Publish GitHub Release");
-  const chromeStep = workflow.slice(chromeStart, edgeStart);
-  const edgeStep = workflow.slice(edgeStart, githubStart);
-
-  for (const name of chromeNames) {
-    const reference = `${name}: \${{ secrets.${name} }}`;
-    assert.equal((workflow.match(new RegExp(`\\$\\{\\{ secrets\\.${name} \\}\\}`, "g")) ?? []).length, 1);
-    assert.match(chromeStep, new RegExp(reference.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  }
-  for (const name of edgeNames) {
-    const reference = `${name}: \${{ secrets.${name} }}`;
-    assert.equal((workflow.match(new RegExp(`\\$\\{\\{ secrets\\.${name} \\}\\}`, "g")) ?? []).length, 1);
-    assert.match(edgeStep, new RegExp(reference.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  }
-  assert.doesNotMatch(workflow.slice(0, chromeStart) + workflow.slice(githubStart), /secrets\./);
-});
-
-test("release workflow keeps failed releases as drafts and documents a safe retry path", async () => {
-  const workflow = await readWorkflow();
-  const failureStart = positionOf(workflow, "- name: Summarize release failure");
-  const failureStep = workflow.slice(failureStart);
-
-  assert.match(failureStep, /if: failure\(\)/);
-  assert.match(failureStep, /\$GITHUB_STEP_SUMMARY/);
-  assert.match(failureStep, /draft remains/i);
-  assert.match(failureStep, /both store dashboards/i);
-  assert.match(failureStep, /recovery mode skips both store submissions/i);
-});
-
-test("release workflow can recover GitHub publication without resubmitting either store item", async () => {
-  const workflow = await readWorkflow();
-  assert.match(workflow, /RECOVERY_REQUESTED: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.publish_github_release_only \|\| false \}\}/);
-  assert.match(workflow, /echo "recovery=\$RECOVERY_REQUESTED" >> "\$GITHUB_OUTPUT"/);
-
-  for (const step of [
+  assert.deepEqual(stepNames(workflow), [
+    "Resolve release tag",
     "Check out release tag",
     "Set up Node.js",
     "Install dependencies",
@@ -109,34 +87,100 @@ test("release workflow can recover GitHub publication without resubmitting eithe
     "Run tests",
     "Validate release",
     "Package extension",
-    "Prepare draft GitHub Release",
-    "Publish to Chrome Web Store",
-    "Publish to Microsoft Edge Add-ons"
+    "Create or update GitHub Release",
+    "Summarize release failure"
+  ]);
+
+  const orderedCommands = [
+    'node scripts/release-version.mjs "$TAG"',
+    "npm test",
+    "npm run validate",
+    "npm run package",
+    'gh release create "$TAG"',
+    'gh release upload "$TAG" "$ASSET" --clobber'
+  ];
+  const positions = orderedCommands.map((token) => positionOf(workflow, token));
+  assert.deepEqual(positions, [...positions].sort((a, b) => a - b));
+});
+
+test("release workflow publishes the Release publicly and only refreshes an existing one", async () => {
+  const workflow = await readWorkflow();
+  const releaseStep = sectionOf(workflow, "- name: Create or update GitHub Release");
+
+  assert.equal((workflow.match(/gh release create/g) ?? []).length, 1);
+  assert.match(
+    releaseStep,
+    /gh release create "\$TAG" --verify-tag --title "Web Clipper for ima \$TAG" --notes "Automated release for \$TAG\."/
+  );
+  assert.doesNotMatch(releaseStep, /--draft/);
+  assert.match(releaseStep, /ASSET="dist\/web-clipper-for-ima-\$VERSION\.zip"/);
+  assert.match(
+    releaseStep,
+    /if gh release view "\$TAG" >\/dev\/null 2>&1; then[\s\S]*gh release upload "\$TAG" "\$ASSET" --clobber/
+  );
+  assert.doesNotMatch(releaseStep, /exit 1/, "an existing Release for the tag must be refreshed, not rejected");
+});
+
+test("release workflow contains no store credentials, store commands, or draft handling", async () => {
+  const workflow = await readWorkflow();
+
+  for (const pattern of [/secrets\./, /CWS_/, /EDGE_/, /cws:/, /edge:/i]) {
+    assert.doesNotMatch(workflow, pattern);
+  }
+  assert.doesNotMatch(workflow, /Chrome Web Store|Edge Add-ons/i);
+  assert.doesNotMatch(workflow, /gh release edit|--draft/);
+});
+
+test("release failure summary explains the build gate without mentioning stores", async () => {
+  const workflow = await readWorkflow();
+  const failureStep = sectionOf(workflow, "- name: Summarize release failure");
+
+  assert.match(failureStep, /if: failure\(\)/);
+  assert.match(failureStep, /\$GITHUB_STEP_SUMMARY/);
+  assert.match(failureStep, /only created after tests, validation, and packaging all succeed/i);
+  assert.doesNotMatch(failureStep, /store|Chrome|Edge|draft/i);
+});
+
+test("npm scripts keep only the build and test contracts", async () => {
+  const packageJson = JSON.parse(await readFile(path.join(repoRoot, "package.json"), "utf8"));
+
+  assert.equal(packageJson.scripts["test:scripts"], "node --test scripts/package-release.test.mjs scripts/release-version.test.mjs scripts/release-workflow.test.mjs");
+  for (const name of Object.keys(packageJson.scripts)) {
+    assert.doesNotMatch(name, /^(cws|edge):/, `store script \`${name}\` must stay deleted`);
+  }
+  assert.doesNotMatch(packageJson.scripts["test:scripts"], /cws|edge/i);
+});
+
+test("release docs send the reader to the Release asset for a manual store upload", async () => {
+  const [readme, chromeGuide, edgeGuide] = await Promise.all([
+    readFile(readmePath, "utf8"),
+    readFile(chromeGuidePath, "utf8"),
+    readFile(edgeGuidePath, "utf8")
+  ]);
+
+  for (const [name, doc] of [
+    ["README.md", readme],
+    ["CHROME_STORE_SUBMISSION.md", chromeGuide],
+    ["EDGE_STORE_SUBMISSION.md", edgeGuide]
   ]) {
-    assert.match(
-      workflow,
-      new RegExp(`- name: ${step}\\n        if: steps\\.release\\.outputs\\.recovery != 'true'`)
+    assert.doesNotMatch(
+      doc,
+      /CWS_(CLIENT_ID|CLIENT_SECRET|REFRESH_TOKEN|ITEM_ID)|EDGE_(PRODUCT_ID|CLIENT_ID|API_KEY)|publish_github_release_only|npm run (cws|edge):/,
+      `${name} must not describe deleted store automation`
     );
   }
 
-  assert.match(workflow, /Chrome Web Store and Edge Add-ons acceptance were confirmed by the operator/i);
-});
-
-test("store guides distinguish a store retry from GitHub-release-only recovery", async () => {
-  const chromeGuide = await readFile(chromeGuidePath, "utf8");
-  const edgeGuide = await readFile(edgeGuidePath, "utf8");
-  for (const guide of [chromeGuide, edgeGuide]) {
-    assert.match(guide, /publish_github_release_only/);
-    assert.match(guide, /both.*store/i);
+  for (const [name, guide] of [
+    ["CHROME_STORE_SUBMISSION.md", chromeGuide],
+    ["EDGE_STORE_SUBMISSION.md", edgeGuide]
+  ]) {
+    assert.match(guide, /GitHub Release/i, `${name} must point at the GitHub Release`);
+    assert.match(guide, /manual/i, `${name} must describe the manual upload`);
+    assert.match(guide, /web-clipper-for-ima-X\.Y\.Z\.zip/, `${name} must name the Release asset`);
   }
-  assert.match(chromeGuide, /existing draft/i);
-  assert.match(edgeGuide, /skips both store APIs/i);
-});
 
-test("npm script contracts include Edge publication and tests", async () => {
-  const packageJson = JSON.parse(await readFile(path.join(scriptDir, "..", "package.json"), "utf8"));
-  assert.equal(packageJson.scripts["edge:publish"], "node scripts/edge-publish.mjs");
-  for (const testPath of ["scripts/edge-api.test.mjs", "scripts/edge-publish.test.mjs", "scripts/release-workflow.test.mjs"]) {
-    assert.match(packageJson.scripts["test:scripts"], new RegExp(testPath.replaceAll(".", "\\.")));
-  }
+  const releaseRules = sectionOf(readme, "## Release rules");
+  assert.match(releaseRules, /public GitHub Release/i);
+  assert.match(releaseRules, /manual/i);
+  assert.doesNotMatch(releaseRules, /draft/i);
 });
