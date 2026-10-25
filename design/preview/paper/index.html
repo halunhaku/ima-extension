@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ima Clipper · 纸面 UI 预览稿</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <svg class="sprite" aria-hidden="true" focusable="false">
+      <symbol id="i-refresh" viewBox="0 0 24 24">
+        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+        <path d="M21 3v5h-5" />
+        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+        <path d="M8 16H3v5" />
+      </symbol>
+      <symbol id="i-sliders" viewBox="0 0 24 24">
+        <path d="M21 4h-7" />
+        <path d="M10 4H3" />
+        <path d="M21 12h-9" />
+        <path d="M8 12H3" />
+        <path d="M21 20h-5" />
+        <path d="M12 20H3" />
+        <path d="M14 2v4" />
+        <path d="M8 10v4" />
+        <path d="M16 18v4" />
+      </symbol>
+      <symbol id="i-clipboard" viewBox="0 0 24 24">
+        <rect width="8" height="4" x="8" y="2" rx="1" />
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+      </symbol>
+      <symbol id="i-link" viewBox="0 0 24 24">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </symbol>
+      <symbol id="i-type" viewBox="0 0 24 24">
+        <path d="M4 7V4h16v3" />
+        <path d="M9 20h6" />
+        <path d="M12 4v16" />
+      </symbol>
+      <symbol id="i-download" viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <path d="m7 10 5 5 5-5" />
+        <path d="M12 15V3" />
+      </symbol>
+      <symbol id="i-external" viewBox="0 0 24 24">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+        <path d="M15 3h6v6" />
+        <path d="M10 14 21 3" />
+      </symbol>
+      <symbol id="i-send" viewBox="0 0 24 24">
+        <path d="M22 2 11 13" />
+        <path d="M22 2 15 22l-4-9-9-4z" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="M20 6 9 17l-5-5" />
+      </symbol>
+      <symbol id="i-warn" viewBox="0 0 24 24">
+        <path d="M21.73 18 13.73 4a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+        <path d="M12 9v4" />
+        <path d="M12 17h.01" />
+      </symbol>
+      <symbol id="i-pointer" viewBox="0 0 24 24">
+        <path d="M4.04 4.69a.5.5 0 0 1 .65-.65l16 6.5a.5.5 0 0 1-.06.95l-6.13 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.12a.5.5 0 0 1-.94.07z" />
+      </symbol>
+      <symbol id="i-file" viewBox="0 0 24 24">
+        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z" />
+        <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+        <path d="M16 13H8" />
+        <path d="M16 17H8" />
+        <path d="M10 9H8" />
+      </symbol>
+    </svg>
+
+    <div class="board">
+      <header class="board-head">
+        <p class="board-eyebrow">design preview · paper · 未提交的界面稿</p>
+        <h1 class="board-title">ima Clipper · 纸面 UI 预览稿</h1>
+        <p class="board-lede">
+          窗口即真实弹窗：内容宽 <b>360px</b>、高 <b>600px</b>，超出部分在框内滚动。颜色、字号、间距、圆角、动效全部取自 MarkTab
+          的 <code>tokens.css</code>，没有新造颜色、阴影或缓动。按钮可点：① 的 Copy、③ 的 Save、④ 的 Retry save 会走一遍状态，③④⑥ 的齿轮会展开/收起设置，② 可切换 Markdown / Preview。
+        </p>
+        <ul class="swatches">
+          <li class="swatch"><i style="background: #f7f3e9"></i><span><b>--canvas</b>#f7f3e9</span></li>
+          <li class="swatch"><i style="background: #fcf9f1"></i><span><b>--surface-1</b>#fcf9f1</span></li>
+          <li class="swatch"><i style="background: #d5cbbb"></i><span><b>--border-1</b>#d5cbbb</span></li>
+          <li class="swatch"><i style="background: #29231c"></i><span><b>--text-1</b>#29231c</span></li>
+          <li class="swatch"><i style="background: #8a3f25"></i><span><b>--accent</b>#8a3f25</span></li>
+          <li class="swatch"><i style="background: #236142"></i><span><b>--success</b>#236142</span></li>
+          <li class="swatch"><i style="background: #795017"></i><span><b>--warning</b>#795017</span></li>
+          <li class="swatch"><i style="background: #a32636"></i><span><b>--error</b>#a32636</span></li>
+        </ul>
+        <hr class="board-rule" />
+      </header>
+
+      <section class="frames">
+        <!-- ① Reader ------------------------------------------------------ -->
+        <article class="frame" id="frame-reader">
+          <div class="frame-head">
+            <p class="frame-kicker"><span class="frame-num">01</span>Reader · 正文</p>
+            <button class="frame-knob" type="button" data-width-toggle aria-label="切换弹窗宽度" title="在 360px 与 560px 之间对照">560px</button>
+          </div>
+          <div class="frame-stage">
+            <div class="popup" data-popup>
+              <div class="p-head">
+                <div class="p-top">
+                  <span class="p-brand">
+                    <span class="p-brand-name">ima Clipper</span>
+                    <span class="p-brand-cap">web clipper</span>
+                  </span>
+                  <button class="p-icon p-icon--tip-below" type="button" data-tip="Refresh capture" aria-label="Refresh capture">
+                    <svg class="icon"><use href="#i-refresh"></use></svg>
+                  </button>
+                </div>
+                <h1 class="p-title">Retrieval Is Not Memory</h1>
+                <div class="p-meta">
+                  <span>every.to</span><span class="p-meta-dot">·</span>
+                  <span>14:32</span><span class="p-meta-dot">·</span>
+                  <span>842 words</span><span class="p-meta-dot">·</span>
+                  <span>3 images</span>
+                  <span class="p-chip p-chip--auto">Auto</span>
+                </div>
+              </div>
+              <nav class="p-tabs" role="tablist" aria-label="View mode">
+                <button class="p-tab is-active" type="button" role="tab" aria-selected="true" data-jump="reader">Reader</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="markdown">Markdown</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="markdown" data-activate-view="preview">Preview</button>
+              </nav>
+              <div class="p-body">
+                <div class="p-surface p-reader" tabindex="0">
+                  <p class="p-lede">Every assistant you used this year is built on the same quiet bet: that the right paragraph, fetched at the right moment, can stand in for knowing anything.</p>
+                  <p>It is a good bet, and it changed what reading feels like. A page stops being something you finish and becomes something you might someday quote. You skim faster, because <a href="#">a summary is always one ask away</a>, and you remember less, because the summary was never yours.</p>
+                  <h2>What retrieval actually does</h2>
+                  <p>Retrieval moves the question from <strong>what do you know</strong> to <strong>what can you find</strong>. That is a real capability, not a party trick — but it is a capability of the archive, not of the reader.</p>
+                  <blockquote>Memory is what survives the search. Retrieval is what shows up in it.</blockquote>
+                  <figure class="p-figure">
+                    <div class="p-figure-plate">figure 1 · 1200 × 640</div>
+                    <figcaption>Figure 1 — A memory pipeline with a search step bolted between recall and answer.</figcaption>
+                  </figure>
+                  <p>Keep the source offsets. When a chunk answers a question, the useful part of the answer is usually the sentence around it, and <code>chunk_id</code> alone will not get you back there.</p>
+                  <pre><code>answer = model.ask(question, context=retrieve(question))</code></pre>
+                  <h2>Reading as a candidate pool</h2>
+                  <ul>
+                    <li>Chunk at paragraph boundaries, not at character counts.</li>
+                    <li>Keep the source offsets next to every chunk.</li>
+                    <li>Fetch three, not thirty.</li>
+                  </ul>
+                  <p>A capture that is honest about what it could not extract is worth more than one that is confident about what it guessed.</p>
+                </div>
+              </div>
+              <div class="p-foot">
+                <div class="p-ima">
+                  <div class="p-ima-status">
+                    <span class="p-mark p-mark--ok" aria-hidden="true"></span>
+                    <p class="p-status-text" title="ima connected / Reading list / Ready">
+                      <span class="p-status-lead">ima connected</span><span class="p-status-sep">/</span><span class="p-status-target">Reading list</span><span class="p-status-sep">/</span><span class="p-status-detail">Ready</span>
+                    </p>
+                    <button class="p-icon" type="button" data-tip="ima settings" data-settings-toggle aria-label="Open ima settings">
+                      <svg class="icon"><use href="#i-sliders"></use></svg>
+                    </button>
+                  </div>
+                  <div class="p-ima-row">
+                    <span class="p-selectwrap">
+                      <select class="p-select" aria-label="ima target">
+                        <option>Note only</option>
+                        <option selected>Reading list</option>
+                        <option>AI research</option>
+                        <option>Clippings</option>
+                      </select>
+                    </span>
+                    <button class="p-icon" type="button" data-tip="Refresh ima targets" aria-label="Refresh ima targets">
+                      <svg class="icon"><use href="#i-refresh"></use></svg>
+                    </button>
+                  </div>
+                  <button class="p-btn p-btn--primary p-save" type="button" data-save="ok">
+                    <svg class="icon"><use href="#i-send"></use></svg>
+                    <span data-save-label>Save to ima</span>
+                  </button>
+                  <div class="p-settings" hidden>
+                    <label class="p-field"><span class="p-label">ima Client ID</span><input class="p-input" type="text" placeholder="Paste Client ID…" /></label>
+                    <label class="p-field"><span class="p-label">ima API Key</span><input class="p-input" type="password" placeholder="Paste API Key to update…" /></label>
+                    <button class="p-btn p-btn--secondary p-btn--sm p-settings-submit" type="button">Save Connection</button>
+                  </div>
+                </div>
+                <div class="p-actions">
+                  <div class="p-actions-left">
+                    <button class="p-btn p-btn--secondary p-btn--sm" type="button">
+                      <svg class="icon"><use href="#i-pointer"></use></svg>Select Area
+                    </button>
+                  </div>
+                  <div class="p-actions-right">
+                    <button class="p-btn p-btn--outline p-btn--sm" type="button" data-copy>
+                      <svg class="icon" data-copy-icon><use href="#i-clipboard"></use></svg>
+                      <span data-copy-label>Copy</span>
+                    </button>
+                    <button class="p-icon" type="button" data-tip="Copy URL" aria-label="Copy URL" data-flash><svg class="icon"><use href="#i-link"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Copy Title" aria-label="Copy title" data-flash><svg class="icon"><use href="#i-type"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Download Markdown" aria-label="Download Markdown" data-flash><svg class="icon"><use href="#i-download"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Open ima" aria-label="Open ima"><svg class="icon"><use href="#i-external"></use></svg></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="frame-note">
+            <b>改了什么：</b>品牌行与页面标题走衬线，抓取模式徽标从胶囊改成 2px 方角纸签；元信息用 <b>·</b> 分隔，不再是一排灰胶囊；标签页去掉滑动药丸与阴影，改下划线索引；正文卡片 1px 细线框、无阴影、无玻璃。按钮可点：Copy 会换成 <code>Copied</code> + 对勾，图标按钮（URL / 标题 / 下载）点完短暂显示对勾。<b>注意：</b>现有弹窗实宽 560px，点右上角可在 360/560 间对照。
+          </p>
+        </article>
+
+        <!-- ② Markdown ---------------------------------------------------- -->
+        <article class="frame" id="frame-markdown">
+          <div class="frame-head">
+            <p class="frame-kicker"><span class="frame-num">02</span>Markdown · 可编辑源码</p>
+          </div>
+          <div class="frame-stage">
+            <div class="popup" data-popup>
+              <div class="p-head">
+                <div class="p-top">
+                  <span class="p-brand">
+                    <span class="p-brand-name">ima Clipper</span>
+                    <span class="p-brand-cap">web clipper</span>
+                  </span>
+                  <button class="p-icon p-icon--tip-below" type="button" data-tip="Refresh capture" aria-label="Refresh capture">
+                    <svg class="icon"><use href="#i-refresh"></use></svg>
+                  </button>
+                </div>
+                <h1 class="p-title">Retrieval Is Not Memory</h1>
+                <div class="p-meta">
+                  <span>every.to</span><span class="p-meta-dot">·</span>
+                  <span>14:32</span><span class="p-meta-dot">·</span>
+                  <span>842 words</span><span class="p-meta-dot">·</span>
+                  <span>3 images</span>
+                  <span class="p-chip p-chip--auto">Auto</span>
+                </div>
+              </div>
+              <nav class="p-tabs" role="tablist" aria-label="View mode">
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="reader">Reader</button>
+                <button class="p-tab is-active" type="button" role="tab" aria-selected="true" data-view="markdown">Markdown</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-view="preview">Preview</button>
+              </nav>
+              <div class="p-body" data-view-panel="markdown">
+                <div class="p-md">
+                  <div class="p-sectionrow">
+                    <p class="p-section-label">Editable Markdown</p>
+                    <p class="p-hint">842 words ready to refine</p>
+                  </div>
+                  <textarea class="p-textarea" aria-label="Markdown content" spellcheck="false"># Retrieval Is Not Memory
+
+Every assistant you used this year is built on the same quiet bet: the right paragraph, fetched at the right moment, can stand in for knowing anything.
+
+It is a good bet, and it changed what reading feels like. A page stops being something you finish and becomes something you might someday quote.
+
+## What retrieval actually does
+
+Retrieval moves the question from **what do you know** to **what can you find**.
+
+> Memory is what survives the search. Retrieval is what shows up in it.
+
+![Figure 1](figure-1.png)
+
+Keep the source offsets. When a chunk answers a question, the useful part of the answer is usually the sentence around it, and `chunk_id` alone will not get you back there.
+
+```ts
+const answer = model.ask(question, context: retrieve(question));
+```
+
+- Chunk at paragraph boundaries, not at character counts.
+- Keep the source offsets next to every chunk.
+- Fetch three, not thirty.
+
+A capture that is honest about what it could not extract is worth more than one that is confident about what it guessed.</textarea>
+                </div>
+              </div>
+              <div class="p-body" data-view-panel="preview" hidden>
+                <div class="p-surface p-reader">
+                  <h2 style="margin-top: 0">What retrieval actually does</h2>
+                  <p>Retrieval moves the question from <strong>what do you know</strong> to <strong>what can you find</strong>.</p>
+                  <blockquote>Memory is what survives the search. Retrieval is what shows up in it.</blockquote>
+                  <figure class="p-figure">
+                    <div class="p-figure-plate">figure 1 · 1200 × 640</div>
+                    <figcaption>Figure 1 — A memory pipeline with a search step bolted between recall and answer.</figcaption>
+                  </figure>
+                  <pre><code>const answer = model.ask(question, context: retrieve(question));</code></pre>
+                  <ul>
+                    <li>Chunk at paragraph boundaries, not at character counts.</li>
+                    <li>Keep the source offsets next to every chunk.</li>
+                    <li>Fetch three, not thirty.</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="p-foot">
+                <div class="p-ima">
+                  <div class="p-ima-status">
+                    <span class="p-mark p-mark--ok" aria-hidden="true"></span>
+                    <p class="p-status-text" title="ima connected / Reading list / Ready">
+                      <span class="p-status-lead">ima connected</span><span class="p-status-sep">/</span><span class="p-status-target">Reading list</span><span class="p-status-sep">/</span><span class="p-status-detail">Ready</span>
+                    </p>
+                    <button class="p-icon" type="button" data-tip="ima settings" data-settings-toggle aria-label="Open ima settings">
+                      <svg class="icon"><use href="#i-sliders"></use></svg>
+                    </button>
+                  </div>
+                  <div class="p-ima-row">
+                    <span class="p-selectwrap">
+                      <select class="p-select" aria-label="ima target">
+                        <option>Note only</option>
+                        <option selected>Reading list</option>
+                        <option>AI research</option>
+                        <option>Clippings</option>
+                      </select>
+                    </span>
+                    <button class="p-icon" type="button" data-tip="Refresh ima targets" aria-label="Refresh ima targets">
+                      <svg class="icon"><use href="#i-refresh"></use></svg>
+                    </button>
+                  </div>
+                  <button class="p-btn p-btn--primary p-save" type="button" data-save="ok">
+                    <svg class="icon"><use href="#i-send"></use></svg>
+                    <span data-save-label>Save to ima</span>
+                  </button>
+                  <div class="p-settings" hidden>
+                    <label class="p-field"><span class="p-label">ima Client ID</span><input class="p-input" type="text" placeholder="Paste Client ID…" /></label>
+                    <label class="p-field"><span class="p-label">ima API Key</span><input class="p-input" type="password" placeholder="Paste API Key to update…" /></label>
+                    <button class="p-btn p-btn--secondary p-btn--sm p-settings-submit" type="button">Save Connection</button>
+                  </div>
+                </div>
+                <div class="p-actions">
+                  <div class="p-actions-left">
+                    <button class="p-btn p-btn--secondary p-btn--sm" type="button">
+                      <svg class="icon"><use href="#i-pointer"></use></svg>Select Area
+                    </button>
+                  </div>
+                  <div class="p-actions-right">
+                    <button class="p-btn p-btn--outline p-btn--sm" type="button" data-copy>
+                      <svg class="icon" data-copy-icon><use href="#i-clipboard"></use></svg>
+                      <span data-copy-label>Copy</span>
+                    </button>
+                    <button class="p-icon" type="button" data-tip="Copy URL" aria-label="Copy URL" data-flash><svg class="icon"><use href="#i-link"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Copy Title" aria-label="Copy title" data-flash><svg class="icon"><use href="#i-type"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Download Markdown" aria-label="Download Markdown" data-flash><svg class="icon"><use href="#i-download"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Open ima" aria-label="Open ima"><svg class="icon"><use href="#i-external"></use></svg></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="frame-note">
+            <b>改了什么：</b>把「可编辑 Markdown」从一张半透明卡片里的灰底输入框，改成纸上的一张稿纸：surface-2 底、1px 线框、4px 圆角、等宽 11.5px/1.65。小节标签用 9.5px 全大写 + 0.06em 字距。Preview 是同结构的只读渲染，点标签页可切换。
+          </p>
+        </article>
+
+        <!-- ③ save success ------------------------------------------------ -->
+        <article class="frame" id="frame-save">
+          <div class="frame-head">
+            <p class="frame-kicker"><span class="frame-num">03</span>ima 保存 · 成功</p>
+          </div>
+          <div class="frame-stage">
+            <div class="popup" data-popup>
+              <div class="p-head">
+                <div class="p-top">
+                  <span class="p-brand">
+                    <span class="p-brand-name">ima Clipper</span>
+                    <span class="p-brand-cap">web clipper</span>
+                  </span>
+                  <button class="p-icon p-icon--tip-below" type="button" data-tip="Refresh capture" aria-label="Refresh capture">
+                    <svg class="icon"><use href="#i-refresh"></use></svg>
+                  </button>
+                </div>
+                <h1 class="p-title">Retrieval Is Not Memory</h1>
+                <div class="p-meta">
+                  <span>every.to</span><span class="p-meta-dot">·</span>
+                  <span>14:32</span><span class="p-meta-dot">·</span>
+                  <span>842 words</span><span class="p-meta-dot">·</span>
+                  <span>3 images</span>
+                  <span class="p-chip p-chip--auto">Auto</span>
+                </div>
+              </div>
+              <nav class="p-tabs" role="tablist" aria-label="View mode">
+                <button class="p-tab is-active" type="button" role="tab" aria-selected="true" data-jump="reader">Reader</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="markdown">Markdown</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="markdown" data-activate-view="preview">Preview</button>
+              </nav>
+              <div class="p-body">
+                <div class="p-surface p-reader">
+                  <p class="p-lede">Every assistant you used this year is built on the same quiet bet: that the right paragraph, fetched at the right moment, can stand in for knowing anything.</p>
+                  <p>It is a good bet, and it changed what reading feels like. A page stops being something you finish and becomes something you might someday quote.</p>
+                  <h2>What retrieval actually does</h2>
+                  <p>Retrieval moves the question from <strong>what do you know</strong> to <strong>what can you find</strong>.</p>
+                  <blockquote>Memory is what survives the search. Retrieval is what shows up in it.</blockquote>
+                </div>
+              </div>
+              <div class="p-foot">
+                <div class="p-ima">
+                  <div class="p-ima-status">
+                    <span class="p-mark p-mark--ok" aria-hidden="true"></span>
+                    <p class="p-status-text" title="ima connected / Reading list / Ready">
+                      <span class="p-status-lead">ima connected</span><span class="p-status-sep">/</span><span class="p-status-target">Reading list</span><span class="p-status-sep">/</span><span class="p-status-detail">Ready</span>
+                    </p>
+                    <button class="p-icon" type="button" data-tip="ima settings" data-settings-toggle aria-label="Open ima settings">
+                      <svg class="icon"><use href="#i-sliders"></use></svg>
+                    </button>
+                  </div>
+                  <div class="p-ima-row">
+                    <span class="p-selectwrap">
+                      <select class="p-select" aria-label="ima target">
+                        <option>Note only</option>
+                        <option selected>Reading list</option>
+                        <option>AI research</option>
+                        <option>Clippings</option>
+                      </select>
+                    </span>
+                    <button class="p-icon" type="button" data-tip="Refresh ima targets" aria-label="Refresh ima targets">
+                      <svg class="icon"><use href="#i-refresh"></use></svg>
+                    </button>
+                  </div>
+                  <button class="p-btn p-btn--primary p-save" type="button" data-save="ok">
+                    <svg class="icon"><use href="#i-send"></use></svg>
+                    <span data-save-label>Save to ima</span>
+                  </button>
+                  <div class="p-settings" hidden>
+                    <label class="p-field"><span class="p-label">ima Client ID</span><input class="p-input" type="text" placeholder="Paste Client ID…" /></label>
+                    <label class="p-field"><span class="p-label">ima API Key</span><input class="p-input" type="password" placeholder="Paste API Key to update…" /></label>
+                    <button class="p-btn p-btn--secondary p-btn--sm p-settings-submit" type="button">Save Connection</button>
+                  </div>
+                </div>
+                <div class="p-actions">
+                  <div class="p-actions-left">
+                    <button class="p-btn p-btn--secondary p-btn--sm" type="button">
+                      <svg class="icon"><use href="#i-pointer"></use></svg>Select Area
+                    </button>
+                  </div>
+                  <div class="p-actions-right">
+                    <button class="p-btn p-btn--outline p-btn--sm" type="button" data-copy>
+                      <svg class="icon" data-copy-icon><use href="#i-clipboard"></use></svg>
+                      <span data-copy-label>Copy</span>
+                    </button>
+                    <button class="p-icon" type="button" data-tip="Copy URL" aria-label="Copy URL" data-flash><svg class="icon"><use href="#i-link"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Copy Title" aria-label="Copy title" data-flash><svg class="icon"><use href="#i-type"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Download Markdown" aria-label="Download Markdown" data-flash><svg class="icon"><use href="#i-download"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Open ima" aria-label="Open ima"><svg class="icon"><use href="#i-external"></use></svg></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="frame-note">
+            <b>怎么用：</b>点 Save to ima，按钮依次走 Saving → Saved（success-soft 底 + success 文字 + 实色描边），状态行末尾同时变成 <code>Saved</code>。成功不再是绿色渐变胶囊，也没有浮层提示条——纸面体系里反馈靠控件自身变色，一屏只用一个实色主按钮。
+          </p>
+        </article>
+
+        <!-- ④ save error + settings --------------------------------------- -->
+        <article class="frame" id="frame-error">
+          <div class="frame-head">
+            <p class="frame-kicker"><span class="frame-num">04</span>ima 保存 · 失败 + 设置展开</p>
+          </div>
+          <div class="frame-stage">
+            <div class="popup" data-popup>
+              <div class="p-head">
+                <div class="p-top">
+                  <span class="p-brand">
+                    <span class="p-brand-name">ima Clipper</span>
+                    <span class="p-brand-cap">web clipper</span>
+                  </span>
+                  <button class="p-icon p-icon--tip-below" type="button" data-tip="Refresh capture" aria-label="Refresh capture">
+                    <svg class="icon"><use href="#i-refresh"></use></svg>
+                  </button>
+                </div>
+                <h1 class="p-title">Retrieval Is Not Memory</h1>
+                <div class="p-meta">
+                  <span>every.to</span><span class="p-meta-dot">·</span>
+                  <span>14:32</span><span class="p-meta-dot">·</span>
+                  <span>842 words</span>
+                  <span class="p-chip p-chip--auto">Auto</span>
+                </div>
+              </div>
+              <nav class="p-tabs" role="tablist" aria-label="View mode">
+                <button class="p-tab is-active" type="button" role="tab" aria-selected="true" data-jump="reader">Reader</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="markdown">Markdown</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="markdown" data-activate-view="preview">Preview</button>
+              </nav>
+              <div class="p-body">
+                <div class="p-note p-note--error">
+                  <svg class="icon" aria-hidden="true"><use href="#i-warn"></use></svg>
+                  <div>
+                    <p class="p-note-title">Save to ima failed.</p>
+                    <p class="p-note-hint">Unauthorized — check the Client ID and API Key below, then retry.</p>
+                  </div>
+                </div>
+                <div class="p-surface p-reader">
+                  <p class="p-lede">Every assistant you used this year is built on the same quiet bet: that the right paragraph, fetched at the right moment, can stand in for knowing anything.</p>
+                  <p>It is a good bet, and it changed what reading feels like.</p>
+                </div>
+              </div>
+              <div class="p-foot">
+                <div class="p-ima">
+                  <div class="p-ima-status">
+                    <span class="p-mark p-mark--error" aria-hidden="true"></span>
+                    <p class="p-status-text" title="ima connected / Note only / Unauthorized">
+                      <span class="p-status-lead">ima connected</span><span class="p-status-sep">/</span><span class="p-status-target">Note only</span><span class="p-status-sep">/</span><span class="p-status-detail p-status-detail--error">Unauthorized</span>
+                    </p>
+                    <button class="p-icon" type="button" data-tip="ima settings" data-settings-toggle aria-label="Open ima settings">
+                      <svg class="icon"><use href="#i-sliders"></use></svg>
+                    </button>
+                  </div>
+                  <div class="p-ima-row">
+                    <span class="p-selectwrap">
+                      <select class="p-select" aria-label="ima target">
+                        <option selected>Note only</option>
+                        <option>Reading list</option>
+                        <option>AI research</option>
+                      </select>
+                    </span>
+                    <button class="p-icon" type="button" data-tip="Refresh ima targets" aria-label="Refresh ima targets">
+                      <svg class="icon"><use href="#i-refresh"></use></svg>
+                    </button>
+                  </div>
+                  <button class="p-btn p-btn--primary p-save is-error" type="button" data-save="error">
+                    <svg class="icon"><use href="#i-send"></use></svg>
+                    <span data-save-label>Retry save</span>
+                  </button>
+                  <div class="p-settings">
+                    <label class="p-field">
+                      <span class="p-label">ima Client ID</span>
+                      <input class="p-input" type="text" value="ima_clipper_7f3c" />
+                    </label>
+                    <label class="p-field">
+                      <span class="p-label">ima API Key</span>
+                      <input class="p-input" type="password" placeholder="Paste API Key to update…" />
+                    </label>
+                    <button class="p-btn p-btn--secondary p-btn--sm p-settings-submit" type="button">Save Connection</button>
+                  </div>
+                </div>
+                <div class="p-actions">
+                  <div class="p-actions-left">
+                    <button class="p-btn p-btn--secondary p-btn--sm" type="button">
+                      <svg class="icon"><use href="#i-pointer"></use></svg>Select Area
+                    </button>
+                  </div>
+                  <div class="p-actions-right">
+                    <button class="p-btn p-btn--outline p-btn--sm" type="button" data-copy>
+                      <svg class="icon" data-copy-icon><use href="#i-clipboard"></use></svg>
+                      <span data-copy-label>Copy</span>
+                    </button>
+                    <button class="p-icon" type="button" data-tip="Copy URL" aria-label="Copy URL" data-flash><svg class="icon"><use href="#i-link"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Copy Title" aria-label="Copy title" data-flash><svg class="icon"><use href="#i-type"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Download Markdown" aria-label="Download Markdown" data-flash><svg class="icon"><use href="#i-download"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Open ima" aria-label="Open ima"><svg class="icon"><use href="#i-external"></use></svg></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="frame-note">
+            <b>代价与判断：</b>设置展开时页脚从 175px 涨到 300px，正文区从 288px 压到 163px（正文卡片只剩 66px）。这是现有弹窗的真实行为，不是预览的画法。若接受这个代价，正文必须能滚；若不接受，建议把设置改成独占一层（浮层，纸面允许 <code>--shadow-3</code>），但那是交互改动，不在本稿里替你决定。
+          </p>
+        </article>
+
+        <!-- ⑤ fallback / empty ------------------------------------------- -->
+        <article class="frame" id="frame-fallback">
+          <div class="frame-head">
+            <p class="frame-kicker"><span class="frame-num">05</span>Fallback · 抓不到正文</p>
+          </div>
+          <div class="frame-stage">
+            <div class="popup" data-popup>
+              <div class="p-head">
+                <div class="p-top">
+                  <span class="p-brand">
+                    <span class="p-brand-name">ima Clipper</span>
+                    <span class="p-brand-cap">web clipper</span>
+                  </span>
+                  <button class="p-icon p-icon--tip-below" type="button" data-tip="Refresh capture" aria-label="Refresh capture">
+                    <svg class="icon"><use href="#i-refresh"></use></svg>
+                  </button>
+                </div>
+                <h1 class="p-title">Tuesday briefing</h1>
+                <div class="p-meta">
+                  <span>news.example.com</span><span class="p-meta-dot">·</span>
+                  <span>09:14</span><span class="p-meta-dot">·</span>
+                  <span>0 words</span>
+                  <span class="p-chip p-chip--fallback">Fallback</span>
+                </div>
+              </div>
+              <nav class="p-tabs" role="tablist" aria-label="View mode">
+                <button class="p-tab is-active" type="button" role="tab" aria-selected="true" data-jump="reader">Reader</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="markdown">Markdown</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="markdown" data-activate-view="preview">Preview</button>
+              </nav>
+              <div class="p-body">
+                <div class="p-note p-note--warn">
+                  <svg class="icon" aria-hidden="true"><use href="#i-warn"></use></svg>
+                  <div>
+                    <p class="p-note-title">Some content could not be extracted.</p>
+                    <p class="p-note-hint">Select exact text, then reopen the clipper.</p>
+                  </div>
+                </div>
+                <div class="p-surface p-empty">
+                  <svg class="icon icon--lg" aria-hidden="true"><use href="#i-file"></use></svg>
+                  <p class="p-empty-title">No readable content was found on this page.</p>
+                  <p class="p-empty-hint">Try selecting the part you want, or refresh the tab and open the clipper again.</p>
+                  <div class="p-empty-actions">
+                    <button class="p-btn p-btn--secondary p-btn--sm" type="button">
+                      <svg class="icon"><use href="#i-pointer"></use></svg>Select Area
+                    </button>
+                    <button class="p-btn p-btn--ghost p-btn--sm" type="button">
+                      <svg class="icon"><use href="#i-refresh"></use></svg>Refresh
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="p-foot">
+                <div class="p-ima">
+                  <div class="p-ima-status">
+                    <span class="p-mark p-mark--warn" aria-hidden="true"></span>
+                    <p class="p-status-text" title="ima connected / Note only / Ready">
+                      <span class="p-status-lead">ima connected</span><span class="p-status-sep">/</span><span class="p-status-target">Note only</span><span class="p-status-sep">/</span><span class="p-status-detail">Ready</span>
+                    </p>
+                    <button class="p-icon" type="button" data-tip="ima settings" data-settings-toggle aria-label="Open ima settings">
+                      <svg class="icon"><use href="#i-sliders"></use></svg>
+                    </button>
+                  </div>
+                  <div class="p-ima-row">
+                    <span class="p-selectwrap">
+                      <select class="p-select" aria-label="ima target">
+                        <option selected>Note only</option>
+                        <option>Reading list</option>
+                      </select>
+                    </span>
+                    <button class="p-icon" type="button" data-tip="Refresh ima targets" aria-label="Refresh ima targets">
+                      <svg class="icon"><use href="#i-refresh"></use></svg>
+                    </button>
+                  </div>
+                  <button class="p-btn p-btn--primary p-save" type="button" disabled>
+                    <svg class="icon"><use href="#i-send"></use></svg>
+                    <span data-save-label>Save to ima</span>
+                  </button>
+                  <div class="p-settings" hidden>
+                    <label class="p-field"><span class="p-label">ima Client ID</span><input class="p-input" type="text" placeholder="Paste Client ID…" /></label>
+                    <label class="p-field"><span class="p-label">ima API Key</span><input class="p-input" type="password" placeholder="Paste API Key to update…" /></label>
+                    <button class="p-btn p-btn--secondary p-btn--sm p-settings-submit" type="button">Save Connection</button>
+                  </div>
+                </div>
+                <div class="p-actions">
+                  <div class="p-actions-left">
+                    <button class="p-btn p-btn--secondary p-btn--sm" type="button">
+                      <svg class="icon"><use href="#i-pointer"></use></svg>Select Area
+                    </button>
+                  </div>
+                  <div class="p-actions-right">
+                    <button class="p-btn p-btn--outline p-btn--sm" type="button" disabled>
+                      <svg class="icon" data-copy-icon><use href="#i-clipboard"></use></svg>
+                      <span data-copy-label>Copy</span>
+                    </button>
+                    <button class="p-icon" type="button" data-tip="Copy URL" aria-label="Copy URL" data-flash><svg class="icon"><use href="#i-link"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Copy Title" aria-label="Copy title" data-flash><svg class="icon"><use href="#i-type"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Download Markdown" aria-label="Download Markdown" data-flash disabled><svg class="icon"><use href="#i-download"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Open ima" aria-label="Open ima"><svg class="icon"><use href="#i-external"></use></svg></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="frame-note">
+            <b>改了什么：</b>警告不再是胶囊提示条：warning 描边 + warning-soft 底 + 标题/说明两级。空白态居中但不夸张，图标 22px 线稿，主动作是 Select Area，次要动作是 Refresh。禁用按钮用 surface-3 底 + text-3 文字 + 1px 线框，不做半透明。
+          </p>
+        </article>
+
+        <!-- ⑥ not connected ---------------------------------------------- -->
+        <article class="frame" id="frame-unconnected">
+          <div class="frame-head">
+            <p class="frame-kicker"><span class="frame-num">06</span>未连接 ima · 首次使用</p>
+          </div>
+          <div class="frame-stage">
+            <div class="popup" data-popup>
+              <div class="p-head">
+                <div class="p-top">
+                  <span class="p-brand">
+                    <span class="p-brand-name">ima Clipper</span>
+                    <span class="p-brand-cap">web clipper</span>
+                  </span>
+                  <button class="p-icon p-icon--tip-below" type="button" data-tip="Refresh capture" aria-label="Refresh capture">
+                    <svg class="icon"><use href="#i-refresh"></use></svg>
+                  </button>
+                </div>
+                <h1 class="p-title">Retrieval Is Not Memory</h1>
+                <div class="p-meta">
+                  <span>every.to</span><span class="p-meta-dot">·</span>
+                  <span>14:32</span><span class="p-meta-dot">·</span>
+                  <span>842 words</span>
+                  <span class="p-chip p-chip--auto">Auto</span>
+                </div>
+              </div>
+              <nav class="p-tabs" role="tablist" aria-label="View mode">
+                <button class="p-tab is-active" type="button" role="tab" aria-selected="true" data-jump="reader">Reader</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="markdown">Markdown</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="markdown" data-activate-view="preview">Preview</button>
+              </nav>
+              <div class="p-body">
+                <div class="p-surface p-reader">
+                  <p class="p-lede">Every assistant you used this year is built on the same quiet bet: that the right paragraph, fetched at the right moment, can stand in for knowing anything.</p>
+                  <p>It is a good bet, and it changed what reading feels like.</p>
+                </div>
+              </div>
+              <div class="p-foot">
+                <div class="p-ima">
+                  <div class="p-ima-status">
+                    <span class="p-mark" aria-hidden="true"></span>
+                    <p class="p-status-text" title="Connect ima to save directly">
+                      <span class="p-status-lead">Connect ima to save directly</span>
+                    </p>
+                    <button class="p-icon" type="button" data-tip="ima settings" data-settings-toggle aria-label="Open ima settings">
+                      <svg class="icon"><use href="#i-sliders"></use></svg>
+                    </button>
+                  </div>
+                  <button class="p-btn p-btn--primary p-save" type="button" disabled>
+                    <svg class="icon"><use href="#i-send"></use></svg>
+                    <span data-save-label>Save to ima</span>
+                  </button>
+                  <div class="p-settings">
+                    <label class="p-field"><span class="p-label">ima Client ID</span><input class="p-input" type="text" placeholder="Paste Client ID…" /></label>
+                    <label class="p-field"><span class="p-label">ima API Key</span><input class="p-input" type="password" placeholder="Paste API Key…" /></label>
+                    <button class="p-btn p-btn--secondary p-btn--sm p-settings-submit" type="button">Save Connection</button>
+                  </div>
+                </div>
+                <div class="p-actions">
+                  <div class="p-actions-left">
+                    <button class="p-btn p-btn--secondary p-btn--sm" type="button">
+                      <svg class="icon"><use href="#i-pointer"></use></svg>Select Area
+                    </button>
+                  </div>
+                  <div class="p-actions-right">
+                    <button class="p-btn p-btn--outline p-btn--sm" type="button" data-copy>
+                      <svg class="icon" data-copy-icon><use href="#i-clipboard"></use></svg>
+                      <span data-copy-label>Copy</span>
+                    </button>
+                    <button class="p-icon" type="button" data-tip="Copy URL" aria-label="Copy URL" data-flash><svg class="icon"><use href="#i-link"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Copy Title" aria-label="Copy title" data-flash><svg class="icon"><use href="#i-type"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Download Markdown" aria-label="Download Markdown" data-flash><svg class="icon"><use href="#i-download"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Open ima" aria-label="Open ima"><svg class="icon"><use href="#i-external"></use></svg></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="frame-note">
+            <b>改了什么：</b>没连接时不摆空状态，直接把两个字段露出来，并让 Save 明确禁用；Copy / 下载仍然可用（剪藏本身不依赖 ima）。状态行用中性方点，不制造红色恐吓。点齿轮可折叠，验证收起后正文能多出两行。
+          </p>
+        </article>
+
+        <!-- ⑦ dark -------------------------------------------------------- -->
+        <article class="frame" id="frame-dark">
+          <div class="frame-head">
+            <p class="frame-kicker"><span class="frame-num">07</span>深色令牌 · Reader</p>
+          </div>
+          <div class="frame-stage">
+            <div class="popup" data-theme="dark" data-popup>
+              <div class="p-head">
+                <div class="p-top">
+                  <span class="p-brand">
+                    <span class="p-brand-name">ima Clipper</span>
+                    <span class="p-brand-cap">web clipper</span>
+                  </span>
+                  <button class="p-icon p-icon--tip-below" type="button" data-tip="Refresh capture" aria-label="Refresh capture">
+                    <svg class="icon"><use href="#i-refresh"></use></svg>
+                  </button>
+                </div>
+                <h1 class="p-title">Retrieval Is Not Memory</h1>
+                <div class="p-meta">
+                  <span>every.to</span><span class="p-meta-dot">·</span>
+                  <span>14:32</span><span class="p-meta-dot">·</span>
+                  <span>842 words</span>
+                  <span class="p-chip p-chip--auto">Auto</span>
+                </div>
+              </div>
+              <nav class="p-tabs" role="tablist" aria-label="View mode">
+                <button class="p-tab is-active" type="button" role="tab" aria-selected="true" data-jump="reader">Reader</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="markdown">Markdown</button>
+                <button class="p-tab" type="button" role="tab" aria-selected="false" data-jump="markdown" data-activate-view="preview">Preview</button>
+              </nav>
+              <div class="p-body">
+                <div class="p-surface p-reader">
+                  <p class="p-lede">Every assistant you used this year is built on the same quiet bet: that the right paragraph, fetched at the right moment, can stand in for knowing anything.</p>
+                  <p>It is a good bet, and it changed what reading feels like. A page stops being something you finish and becomes something you might someday quote.</p>
+                  <h2>What retrieval actually does</h2>
+                  <p>Retrieval moves the question from <strong>what do you know</strong> to <strong>what can you find</strong>.</p>
+                  <blockquote>Memory is what survives the search. Retrieval is what shows up in it.</blockquote>
+                  <p>Keep the source offsets. When a chunk answers a question, the useful part is usually the sentence around it.</p>
+                  <pre><code>answer = model.ask(question, context=retrieve(question))</code></pre>
+                </div>
+              </div>
+              <div class="p-foot">
+                <div class="p-ima">
+                  <div class="p-ima-status">
+                    <span class="p-mark p-mark--ok" aria-hidden="true"></span>
+                    <p class="p-status-text" title="ima connected / Reading list / Ready">
+                      <span class="p-status-lead">ima connected</span><span class="p-status-sep">/</span><span class="p-status-target">Reading list</span><span class="p-status-sep">/</span><span class="p-status-detail">Ready</span>
+                    </p>
+                    <button class="p-icon" type="button" data-tip="ima settings" data-settings-toggle aria-label="Open ima settings">
+                      <svg class="icon"><use href="#i-sliders"></use></svg>
+                    </button>
+                  </div>
+                  <div class="p-ima-row">
+                    <span class="p-selectwrap">
+                      <select class="p-select" aria-label="ima target">
+                        <option>Note only</option>
+                        <option selected>Reading list</option>
+                      </select>
+                    </span>
+                    <button class="p-icon" type="button" data-tip="Refresh ima targets" aria-label="Refresh ima targets">
+                      <svg class="icon"><use href="#i-refresh"></use></svg>
+                    </button>
+                  </div>
+                  <button class="p-btn p-btn--primary p-save" type="button" data-save="ok">
+                    <svg class="icon"><use href="#i-send"></use></svg>
+                    <span data-save-label>Save to ima</span>
+                  </button>
+                  <div class="p-settings" hidden>
+                    <label class="p-field"><span class="p-label">ima Client ID</span><input class="p-input" type="text" placeholder="Paste Client ID…" /></label>
+                    <label class="p-field"><span class="p-label">ima API Key</span><input class="p-input" type="password" placeholder="Paste API Key to update…" /></label>
+                    <button class="p-btn p-btn--secondary p-btn--sm p-settings-submit" type="button">Save Connection</button>
+                  </div>
+                </div>
+                <div class="p-actions">
+                  <div class="p-actions-left">
+                    <button class="p-btn p-btn--secondary p-btn--sm" type="button">
+                      <svg class="icon"><use href="#i-pointer"></use></svg>Select Area
+                    </button>
+                  </div>
+                  <div class="p-actions-right">
+                    <button class="p-btn p-btn--outline p-btn--sm" type="button" data-copy>
+                      <svg class="icon" data-copy-icon><use href="#i-clipboard"></use></svg>
+                      <span data-copy-label>Copy</span>
+                    </button>
+                    <button class="p-icon" type="button" data-tip="Copy URL" aria-label="Copy URL" data-flash><svg class="icon"><use href="#i-link"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Copy Title" aria-label="Copy title" data-flash><svg class="icon"><use href="#i-type"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Download Markdown" aria-label="Download Markdown" data-flash><svg class="icon"><use href="#i-download"></use></svg></button>
+                    <button class="p-icon" type="button" data-tip="Open ima" aria-label="Open ima"><svg class="icon"><use href="#i-external"></use></svg></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="frame-note">
+            <b>为什么放这里：</b>深色令牌只在本帧验证，用来确认结构不依赖任何浅色硬编码。是否做主题切换是待你拍板的开放问题——现有扩展没有主题开关，`popup.css` 里写死 <code>color-scheme: light</code>。
+          </p>
+        </article>
+      </section>
+
+      <footer class="board-foot">
+        <p>
+          <b>未覆盖：</b>Loading 骨架、Manual Area 结果窗口、恢复失败（Retry / Back to Auto）路径、Preview 作为独立一屏。<b>本稿不改动</b> <code>src/</code>、manifest、构建与发布脚本；落地需要重写 <code>src/ui/popup/popup.css</code> 与 <code>PopupApp.tsx</code> 的类名与结构，映射表见 <code>README.md</code>。
+        </p>
+      </footer>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
