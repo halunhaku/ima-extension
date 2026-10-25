@@ -12,10 +12,7 @@ const requiredFiles = [
   "CHROME_STORE_SUBMISSION.md",
   ".github/workflows/release.yml",
   "scripts/release-version.mjs",
-  "scripts/package-release.mjs",
-  "scripts/cws-api.mjs",
-  "scripts/cws-publish.mjs",
-  "scripts/cws-auth.mjs"
+  "scripts/package-release.mjs"
 ];
 
 const expectedPermissions = ["activeTab", "contextMenus", "scripting", "storage"];

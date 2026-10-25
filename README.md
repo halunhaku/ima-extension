@@ -101,7 +101,7 @@ src/core/          Extraction, cleanup, and Markdown template logic
 src/ui/popup/      Popup UI (paper design tokens live in tokens.css), export actions, and ima API / save integration
 public/icons/      Extension icons packaged into dist
 docs/              Manual test, store listing, privacy, and asset notes
-scripts/           Packaging, validation, CWS publishing, and OAuth helpers
+scripts/           Packaging, validation, and release helpers
 ```
 
 ## Verification
@@ -123,8 +123,8 @@ The extension package includes local icons under `public/icons`. Store listing s
 
 - The release boundary is a pushed tag matching `vX.Y.Z`.
 - Before creating the tag, `package.json` and `manifest.json` must already contain the same version.
-- The GitHub Actions workflow rebuilds the extension, creates or reuses a draft GitHub Release, uploads the ZIP artifact, and submits the Chrome Web Store item for review.
-- The GitHub Release is published only after the Chrome Web Store API accepts the submission.
+- The GitHub Actions workflow rebuilds the extension, runs tests and release validation, and creates a public GitHub Release for the tag with `web-clipper-for-ima-X.Y.Z.zip` attached. Rerunning it for an existing tag only refreshes that asset.
+- Store submission is manual: download the ZIP from the GitHub Release and upload it in the Chrome Web Store and Edge Add-ons dashboards.
 - Push the release commit and the release tag explicitly. Do not rely on `--follow-tags` for lightweight tags.
 
 Example release flow:
@@ -140,26 +140,18 @@ git push origin HEAD
 git push origin vX.Y.Z
 ```
 
-## Chrome Web Store automation setup
+## Store submission (manual)
 
-The release workflow expects these repository secrets:
+The release workflow does not talk to any store API and needs no store credentials.
 
-- `CWS_CLIENT_ID`
-- `CWS_CLIENT_SECRET`
-- `CWS_REFRESH_TOKEN`
-- `CWS_ITEM_ID`
+1. Push the `vX.Y.Z` tag and wait for the `Release` workflow to finish.
+2. Download `web-clipper-for-ima-X.Y.Z.zip` from the GitHub Release for that tag.
+3. Upload the ZIP manually in the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole) and in [Microsoft Partner Center](https://partner.microsoft.com/dashboard/microsoftedge) for Edge Add-ons.
+4. Submit both items for review from those dashboards.
 
-Helpers:
+If the workflow failed before creating the Release, fix the failure and rerun the workflow with the same tag; no store state is involved.
 
-- `npm run cws:auth` starts the OAuth consent flow and stores `CWS_REFRESH_TOKEN` through GitHub CLI.
-- `npm run cws:publish -- dist/web-clipper-for-ima-<version>.zip` submits an already-built ZIP locally.
-
-If the store submission succeeded but GitHub Release publication failed, rerun the workflow manually with:
-
-- `tag = vX.Y.Z`
-- `publish_github_release_only = true`
-
-Use that recovery mode only after you confirm in the Chrome Web Store dashboard that the submission was accepted.
+Store listing copy and permission justifications live in [CHROME_STORE_SUBMISSION.md](CHROME_STORE_SUBMISSION.md) and [EDGE_STORE_SUBMISSION.md](EDGE_STORE_SUBMISSION.md).
 
 ## Permissions
 
