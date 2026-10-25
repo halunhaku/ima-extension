@@ -2,7 +2,6 @@ import {
   AlertTriangle,
   Check,
   Clipboard,
-  Database,
   Download,
   ExternalLink,
   FileText,
@@ -36,13 +35,13 @@ import { renderMarkdownPreview } from "./markdownPreview";
 import {
   clearManualAreaSessionCache,
   retryTakePendingManualAreaCapture,
-  shouldShowBackToAuto,
-  takePendingManualAreaCapture
+  shouldShowBackToAuto
 } from "./manualAreaState";
 import { getTargetTab } from "./activeTab";
 import { resolvePreferredCapture } from "./popupCapture";
 
 type ViewMode = "reader" | "markdown" | "preview";
+type ConfirmedAction = "url" | "title" | "download";
 
 interface LoadState {
   status: "idle" | "loading" | "ready" | "error";
@@ -107,15 +106,28 @@ function sourceModeLabel(page: ExtractedPage): string {
 
 function sourceModeClass(page: ExtractedPage): string {
   if (page.sourceMode === "manualArea") {
-    return "source-badge source-badge-manual";
+    return "mode-chip mode-chip-manual";
   }
   if (page.sourceMode === "selection") {
-    return "source-badge source-badge-selection";
+    return "mode-chip mode-chip-selection";
   }
   if (page.sourceMode === "fallback") {
-    return "source-badge source-badge-fallback";
+    return "mode-chip mode-chip-fallback";
   }
-  return "source-badge source-badge-auto";
+  return "mode-chip";
+}
+
+function imaStatusMarkClass(status: ImaState["status"], connected: boolean): string {
+  if (!connected) {
+    return "status-mark";
+  }
+  if (status === "error") {
+    return "status-mark status-mark-error";
+  }
+  if (status === "ready") {
+    return "status-mark status-mark-ok";
+  }
+  return "status-mark";
 }
 
 export function PopupApp() {
@@ -125,6 +137,7 @@ export function PopupApp() {
   // fill the available space instead of leaving dead space at the bottom.
   const [popupHeight] = useState(() => Math.max(window.innerHeight, 600));
   const [actionState, setActionState] = useState<string>("");
+  const [confirmedAction, setConfirmedAction] = useState<ConfirmedAction | null>(null);
   const [loadState, setLoadState] = useState<LoadState>({
     status: "idle",
     message: ""
@@ -137,7 +150,6 @@ export function PopupApp() {
   const [clientIdInput, setClientIdInput] = useState("");
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState("");
-  const [recentAction, setRecentAction] = useState<"copy" | "save" | null>(null);
 
   const previewHtml = useMemo(() => renderMarkdownPreview(page?.markdown ?? ""), [page?.markdown]);
   const markdownWordCount = useMemo(() => {
@@ -169,6 +181,7 @@ export function PopupApp() {
     message: imaState.message,
     status: imaState.status
   });
+  const markdownCopied = actionState === "Markdown copied";
   const tabs: ViewMode[] = ["reader", "markdown", "preview"];
 
   async function refreshKnowledgeBases(credentials: ImaCredentials) {
@@ -261,13 +274,13 @@ export function PopupApp() {
   }, []);
 
   useEffect(() => {
-    if (!recentAction) {
+    if (!confirmedAction) {
       return undefined;
     }
 
-    const timer = window.setTimeout(() => setRecentAction(null), 1800);
+    const timer = window.setTimeout(() => setConfirmedAction(null), 1400);
     return () => window.clearTimeout(timer);
-  }, [recentAction]);
+  }, [confirmedAction]);
 
   async function copyMarkdown() {
     if (!page?.markdown) {
@@ -276,7 +289,6 @@ export function PopupApp() {
 
     await navigator.clipboard.writeText(page.markdown);
     setActionState("Markdown copied");
-    setRecentAction("copy");
     window.setTimeout(() => setActionState(""), 1600);
   }
 
@@ -287,6 +299,7 @@ export function PopupApp() {
 
     await navigator.clipboard.writeText(page.url);
     setActionState("URL copied");
+    setConfirmedAction("url");
     window.setTimeout(() => setActionState(""), 1600);
   }
 
@@ -297,6 +310,7 @@ export function PopupApp() {
 
     await navigator.clipboard.writeText(page.title);
     setActionState("Title copied");
+    setConfirmedAction("title");
     window.setTimeout(() => setActionState(""), 1600);
   }
 
@@ -307,6 +321,7 @@ export function PopupApp() {
 
     downloadMarkdown(page.markdown, page.title);
     setActionState("Markdown downloaded");
+    setConfirmedAction("download");
     window.setTimeout(() => setActionState(""), 1600);
   }
 
@@ -369,7 +384,6 @@ export function PopupApp() {
         status: "ready",
         message: selectedKnowledgeBaseId ? "Saved to ima knowledge base." : "Saved as ima note."
       });
-      setRecentAction("save");
     } catch (error) {
       setImaState({
         status: "error",
@@ -456,123 +470,113 @@ export function PopupApp() {
   }
 
   return (
-    <main className="flex w-[560px] overflow-hidden bg-transparent text-zinc-950" style={{ height: popupHeight }}>
-      <div className="flex min-h-0 w-full flex-col">
-        <header className="shrink-0 px-5 pb-3 pt-4">
-        <div className="panel-shell px-4 py-3.5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-zinc-500">
-                <span className="brand-mark">
-                  <span className="brand-dot" aria-hidden="true" />
-                  ima Clipper
-                </span>
-                {page ? <span className={sourceModeClass(page)}>{sourceModeLabel(page)}</span> : null}
-              </div>
-              <h1 className="mt-1.5 line-clamp-1 text-balance text-[18px] font-semibold leading-[1.3] tracking-[-0.012em] text-zinc-950">
-                {page?.title ?? "Current page"}
-              </h1>
-            </div>
-            <button
-              className="icon-button bg-white/80"
-              type="button"
-              title="Refresh capture"
-              aria-label="Refresh capture"
-              onClick={() => void loadPage()}
-              disabled={loadState.status === "loading"}
-            >
-              <RefreshCw className={loadState.status === "loading" ? "animate-spin motion-reduce:animate-none" : ""} size={16} />
-            </button>
-          </div>
-          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-zinc-500">
-            <span className="meta-pill max-w-full truncate">{page?.siteName ?? "No page loaded"}</span>
+    <main className="popup-app" style={{ height: popupHeight }}>
+      <header className="popup-head">
+        <div className="popup-brand-row">
+          <span className="brand">
+            <span className="brand-name">ima Clipper</span>
+            <span className="brand-cap">web clipper</span>
+          </span>
+          <button
+            className="icon-button icon-button-tip-below"
+            type="button"
+            data-tip="Refresh capture"
+            aria-label="Refresh capture"
+            onClick={() => void loadPage()}
+            disabled={loadState.status === "loading"}
+          >
+            <RefreshCw className={loadState.status === "loading" ? "is-spinning" : ""} size={14} />
+          </button>
+        </div>
+        <h1 className="page-title">{page?.title ?? "Current page"}</h1>
+        <div className="meta-row">
+          <span className="meta-main">
+            {page?.siteName ?? "No page loaded"}
             {page ? (
-              <span className="meta-pill shrink-0">
+              <>
+                <span className="meta-sep">·</span>
                 {new Date(page.capturedAt).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit"
                 })}
-              </span>
+              </>
             ) : null}
             {page && markdownWordCount > 0 ? (
-              <span className="meta-pill shrink-0">{markdownWordCount} words</span>
+              <>
+                <span className="meta-sep">·</span>
+                {markdownWordCount} words
+              </>
             ) : null}
             {page && readerImageCount > 0 ? (
-              <span className="meta-pill shrink-0">{readerImageCount} images</span>
+              <>
+                <span className="meta-sep">·</span>
+                {readerImageCount} images
+              </>
             ) : null}
-            {page?.siteRuleApplied ? <span className="site-rule-badge">{page.siteRuleApplied}</span> : null}
-          </div>
-          <div className="accent-divider mt-3" />
+          </span>
+          <span className="meta-chips">
+            {page?.siteRuleApplied ? (
+              <span className="mode-chip mode-chip-site">{page.siteRuleApplied}</span>
+            ) : null}
+            {page ? <span className={sourceModeClass(page)}>{sourceModeLabel(page)}</span> : null}
+          </span>
         </div>
-        </header>
+      </header>
 
-        <div className="shrink-0 px-5 pb-2">
-        <nav
-          className="tab-nav"
-          aria-label="View mode"
-          role="tablist"
-        >
-          <div
-            aria-hidden="true"
-            className="tab-indicator"
-            style={{
-              transform: `translateX(calc(${tabs.indexOf(mode) * 100}% + ${
-                tabs.indexOf(mode) * 4
-              }px))`
-            }}
-          />
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              className={`tab-button ${mode === tab ? "tab-button-active" : ""}`}
-              type="button"
-              id={`${tab}-tab`}
-              role="tab"
-              aria-selected={mode === tab}
-              aria-controls={`${tab}-panel`}
-              onClick={() => setMode(tab)}
-              onKeyDown={(event) => handleTabKeyDown(tab, event)}
-            >
-              {tab === "reader" ? "Reader" : tab === "markdown" ? "Markdown" : "Preview"}
-            </button>
-          ))}
-        </nav>
-        </div>
+      <nav className="view-tabs" aria-label="View mode" role="tablist">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            className={`tab-button ${mode === tab ? "tab-button-active" : ""}`}
+            type="button"
+            id={`${tab}-tab`}
+            role="tab"
+            aria-selected={mode === tab}
+            aria-controls={`${tab}-panel`}
+            onClick={() => setMode(tab)}
+            onKeyDown={(event) => handleTabKeyDown(tab, event)}
+          >
+            {tab === "reader" ? "Reader" : tab === "markdown" ? "Markdown" : "Preview"}
+          </button>
+        ))}
+      </nav>
 
-        <section className="min-h-0 flex-1 overflow-hidden px-5 pb-3">
+      <section className="popup-body">
         {page?.extractionWarning ? (
-          <div className="status-note mb-3">
-            <AlertTriangle className="mt-0.5 shrink-0" size={16} />
-            <div>
-              <p className="font-semibold">{page.extractionWarning}</p>
-              <p>Select exact text, then reopen the clipper.</p>
+          <div className="status-note status-note-warning">
+            <AlertTriangle size={14} aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="status-note-title">{page.extractionWarning}</p>
+              <p className="status-note-hint">Select exact text, then reopen the clipper.</p>
             </div>
           </div>
         ) : null}
 
         {page?.sourceMode === "manualArea" ? (
-          <div className="status-note status-note-manual mb-3">
-            <MousePointer2 className="mt-0.5 shrink-0" size={16} />
-            <div>
-              <p className="font-semibold">Manual area</p>
-              {page.selectedSelector ? <p className="truncate">{page.selectedSelector}</p> : null}
+          <div className="status-note">
+            <MousePointer2 size={14} aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="status-note-title">Manual area</p>
+              {page.selectedSelector ? (
+                <p className="status-note-hint">{page.selectedSelector}</p>
+              ) : null}
             </div>
           </div>
         ) : null}
 
         {loadState.status === "loading" ? (
           <div className="empty-state" aria-live="polite">
-            <RefreshCw className="animate-spin motion-reduce:animate-none" size={22} />
-            <p>{loadState.message}</p>
+            <RefreshCw className="is-spinning" size={22} aria-hidden="true" />
+            <p className="empty-state-message">{loadState.message}</p>
           </div>
         ) : null}
 
         {loadState.status === "error" ? (
           <div className="empty-state" aria-live="polite">
-            <FileText size={24} />
-            <p>{loadState.message}</p>
+            <FileText size={22} aria-hidden="true" />
+            <p className="empty-state-message">{loadState.message}</p>
             {isRecoveryMode ? (
-              <div className="mt-4 flex gap-2">
+              <div className="empty-state-actions">
                 <button
                   className="secondary-button"
                   type="button"
@@ -599,7 +603,7 @@ export function PopupApp() {
                   }}
                   disabled={false}
                 >
-                  <RefreshCw size={16} />
+                  <RefreshCw size={14} />
                   Retry
                 </button>
                 <button
@@ -621,18 +625,13 @@ export function PopupApp() {
 
         {loadState.status === "ready" && page && !page.markdown.trim() ? (
           <div className="empty-state" aria-live="polite">
-            <FileText size={24} />
-            <p>{loadState.message}</p>
+            <FileText size={22} aria-hidden="true" />
+            <p className="empty-state-message">{loadState.message}</p>
           </div>
         ) : null}
 
         {page && mode === "reader" ? (
-          <div
-            className="reader-shell content-surface panel-enter"
-            id="reader-panel"
-            role="tabpanel"
-            aria-labelledby="reader-tab"
-          >
+          <div className="reader-shell" id="reader-panel" role="tabpanel" aria-labelledby="reader-tab">
             <article
               className="reader-content"
               dangerouslySetInnerHTML={{ __html: page.readerHtml }}
@@ -642,18 +641,22 @@ export function PopupApp() {
 
         {page && mode === "markdown" ? (
           <div
-            className="content-surface markdown-shell panel-enter"
+            className="markdown-shell"
             id="markdown-panel"
             role="tabpanel"
             aria-labelledby="markdown-tab"
           >
-            <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="section-row">
               <p className="section-label">Editable Markdown</p>
-              <p className="supporting-copy">{markdownWordCount > 0 ? `${markdownWordCount} words ready to refine` : "Start editing the capture"}</p>
+              <p className="supporting-copy">
+                {markdownWordCount > 0
+                  ? `${markdownWordCount} words ready to refine`
+                  : "Start editing the capture"}
+              </p>
             </div>
             <textarea
               aria-label="Markdown content"
-              className="h-[calc(100%-30px)] min-h-0 w-full resize-none overflow-auto rounded-lg bg-zinc-50/80 p-4 font-mono text-xs leading-5 text-zinc-800 outline-none focus:ring-2 focus:ring-emerald-200/70"
+              className="markdown-input"
               value={page.markdown}
               onChange={(event) =>
                 setPage({
@@ -666,58 +669,60 @@ export function PopupApp() {
         ) : null}
 
         {page && mode === "preview" ? (
-          <article
-            className="preview-content content-surface panel-enter"
-            id="preview-panel"
-            role="tabpanel"
-            aria-labelledby="preview-tab"
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
-          />
+          <div className="reader-shell" id="preview-panel" role="tabpanel" aria-labelledby="preview-tab">
+            <article className="reader-content" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+          </div>
         ) : null}
-        </section>
+      </section>
 
-        <footer className="shrink-0 px-5 pb-3 pt-2">
-        <div className="ima-panel ima-panel-compact mb-3">
-          <div className="ima-action-row">
-            <div className="ima-status-line">
-              <span className="status-icon-chip shrink-0" aria-hidden="true">
-                <Database size={15} />
-              </span>
-              <div className="min-w-0">
-                <p
-                  className={`truncate text-xs font-semibold ${
-                    imaState.status === "error" ? "text-red-700" : "text-zinc-800"
-                  }`}
-                  title={imaStatusLine}
+      <footer className="popup-foot">
+        <div className="ima-panel">
+          <div className="ima-status-line">
+            <span
+              className={imaStatusMarkClass(imaState.status, Boolean(imaSettings.credentials))}
+              aria-hidden="true"
+            />
+            <p
+              className={`status-text ${imaState.status === "error" ? "status-text-error" : ""}`}
+              title={imaStatusLine}
+            >
+              {imaStatusLine}
+            </p>
+            <button
+              className="icon-button"
+              type="button"
+              data-tip="ima settings"
+              aria-label="Open ima settings"
+              aria-expanded={showImaSettings}
+              onClick={() => setShowImaSettings((value) => !value)}
+            >
+              <Settings size={14} />
+            </button>
+          </div>
+
+          {imaSettings.credentials ? (
+            <div className="ima-target-row">
+              <span className="select-wrap">
+                <select
+                  className="ima-select"
+                  value={selectedKnowledgeBaseId}
+                  onChange={(event) => void chooseKnowledgeBase(event.target.value)}
+                  disabled={imaState.status === "loading"}
+                  title="ima target"
+                  aria-label="ima target"
                 >
-                  {imaStatusLine}
-                </p>
-              </div>
-            </div>
-
-            {imaSettings.credentials ? (
-              <select
-                className="ima-select ima-select-compact"
-                value={selectedKnowledgeBaseId}
-                onChange={(event) => void chooseKnowledgeBase(event.target.value)}
-                disabled={imaState.status === "loading"}
-                title="ima target"
-                aria-label="ima target"
-              >
-                <option value="">Note only</option>
-                {knowledgeBases.map((knowledgeBase) => (
-                  <option key={knowledgeBase.id} value={knowledgeBase.id}>
-                    {knowledgeBase.name}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-
-            {imaSettings.credentials ? (
+                  <option value="">Note only</option>
+                  {knowledgeBases.map((knowledgeBase) => (
+                    <option key={knowledgeBase.id} value={knowledgeBase.id}>
+                      {knowledgeBase.name}
+                    </option>
+                  ))}
+                </select>
+              </span>
               <button
-                className="toolbar-button"
+                className="icon-button"
                 type="button"
-                title="Refresh ima targets"
+                data-tip="Refresh ima targets"
                 aria-label="Refresh ima targets"
                 onClick={() =>
                   imaSettings.credentials
@@ -726,41 +731,31 @@ export function PopupApp() {
                 }
                 disabled={imaState.status === "loading"}
               >
-                <RefreshCw size={15} />
+                <RefreshCw size={14} className={imaState.status === "loading" ? "is-spinning" : ""} />
               </button>
-            ) : null}
+            </div>
+          ) : null}
 
-            <button
-              className={`primary-button ima-save-button ${
-                imaSaveButton.tone === "success"
-                  ? "ima-save-button-success"
-                  : imaSaveButton.tone === "error"
-                    ? "ima-save-button-error"
-                    : ""
-              } ${recentAction === "save" ? "action-pulse" : ""}`}
-              type="button"
-              onClick={() => void saveCurrentPageToIma()}
-              disabled={!page?.markdown || imaState.status === "loading"}
-              title={imaSettings.credentials ? "Save to ima" : "Connect ima first"}
-              aria-label={imaSettings.credentials ? "Save to ima" : "Connect ima first"}
-            >
-              {imaSaveButton.tone === "success" ? <Check size={15} /> : <Send size={15} />}
-              {imaSaveButton.label}
-            </button>
-
-            <button
-              className="toolbar-button"
-              type="button"
-              title="ima settings"
-              aria-label="Open ima settings"
-              onClick={() => setShowImaSettings((value) => !value)}
-            >
-              <Settings size={16} />
-            </button>
-          </div>
+          <button
+            className={`primary-button ima-save-button ${
+              imaSaveButton.tone === "success"
+                ? "ima-save-button-success"
+                : imaSaveButton.tone === "error"
+                  ? "ima-save-button-error"
+                  : ""
+            }`}
+            type="button"
+            onClick={() => void saveCurrentPageToIma()}
+            disabled={!page?.markdown || imaState.status === "loading"}
+            title={imaSettings.credentials ? "Save to ima" : "Connect ima first"}
+            aria-label={imaSettings.credentials ? "Save to ima" : "Connect ima first"}
+          >
+            {imaSaveButton.tone === "success" ? <Check size={14} /> : <Send size={14} />}
+            {imaSaveButton.label}
+          </button>
 
           {showImaSettings ? (
-            <div className="mt-3 grid gap-2 border-t border-black/5 pt-3">
+            <div className="settings-grid">
               <label className="settings-field">
                 <span className="settings-label">ima Client ID</span>
                 <input
@@ -786,7 +781,7 @@ export function PopupApp() {
                 />
               </label>
               <button
-                className="secondary-button justify-self-start"
+                className="secondary-button settings-submit"
                 type="button"
                 onClick={() => void connectIma()}
                 disabled={imaState.status === "loading"}
@@ -796,6 +791,7 @@ export function PopupApp() {
             </div>
           ) : null}
         </div>
+
         <div className="action-tray">
           <div className="action-tray-group">
             {shouldShowBackToAuto(page) ? (
@@ -817,69 +813,66 @@ export function PopupApp() {
               onClick={selectArea}
               disabled={loadState.status === "loading"}
             >
-              <MousePointer2 size={16} />
+              <MousePointer2 size={14} />
               Select Area
             </button>
           </div>
           <div className="action-tray-group">
             <button
-              className={`primary-button compact-primary-button ${
-                actionState === "Markdown copied" ? "primary-button-copied" : ""
-              } ${recentAction === "copy" ? "action-pulse" : ""}`}
+              className={`outline-button ${markdownCopied ? "is-copied" : ""}`}
               type="button"
               onClick={copyMarkdown}
               disabled={!page?.markdown}
               title="Copy Markdown"
             >
-              {actionState === "Markdown copied" ? <Check size={16} /> : <Clipboard size={16} />}
-              {actionState === "Markdown copied" ? "Copied" : "Copy"}
+              {markdownCopied ? <Check size={14} /> : <Clipboard size={14} />}
+              {markdownCopied ? "Copied" : "Copy"}
             </button>
             <button
-              className="toolbar-button toolbar-button-subtle"
+              className={`icon-button ${confirmedAction === "url" ? "is-confirmed" : ""}`}
               type="button"
               onClick={copySourceUrl}
               disabled={!page?.url}
-              title="Copy URL"
+              data-tip="Copy URL"
               aria-label="Copy URL"
             >
-              <Link size={16} />
+              {confirmedAction === "url" ? <Check size={14} /> : <Link size={14} />}
             </button>
             <button
-              className="toolbar-button toolbar-button-subtle"
+              className={`icon-button ${confirmedAction === "title" ? "is-confirmed" : ""}`}
               type="button"
               onClick={copyTitle}
               disabled={!page?.title}
-              title="Copy Title"
+              data-tip="Copy Title"
               aria-label="Copy title"
             >
-              <Type size={16} />
+              {confirmedAction === "title" ? <Check size={14} /> : <Type size={14} />}
             </button>
             <button
-              className="toolbar-button toolbar-button-subtle"
+              className={`icon-button ${confirmedAction === "download" ? "is-confirmed" : ""}`}
               type="button"
               onClick={downloadCurrentMarkdown}
               disabled={!page?.markdown}
-              title="Download Markdown"
+              data-tip="Download Markdown"
               aria-label="Download Markdown"
             >
-              <Download size={16} />
+              {confirmedAction === "download" ? <Check size={14} /> : <Download size={14} />}
             </button>
             <button
-              className="toolbar-button toolbar-button-subtle"
+              className="icon-button"
               type="button"
               onClick={openIma}
-              title="Open ima"
+              data-tip="Open ima"
               aria-label="Open ima"
             >
-              <ExternalLink size={16} />
+              <ExternalLink size={14} />
             </button>
           </div>
         </div>
         <div className="sr-only" aria-live="polite">
           {actionState || imaState.message}
         </div>
-        </footer>
-      </div>
+      </footer>
     </main>
   );
 }
