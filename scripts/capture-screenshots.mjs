@@ -117,23 +117,26 @@ async function capturePromo(browser, outDir) {
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{width:440px;height:280px;overflow:hidden;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(145deg,#f6f4eb,#eeeadf);font-family:system-ui,-apple-system,sans-serif}
+  background:#f7f3e9;color:#29231c;
+  font-family:system-ui,-apple-system,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif}
 .card{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;padding:24px}
-.brand{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:0.1em;
-  text-transform:uppercase;color:#527a66}
-.dot{width:8px;height:8px;border-radius:50%;
-  background:linear-gradient(135deg,#0f9f6e,#34d399);box-shadow:0 0 0 3px rgba(15,159,110,0.12)}
-h1{font-size:22px;font-weight:700;color:#0f172a;line-height:1.2}
-p{font-size:12.5px;color:#4b5563;line-height:1.5;max-width:340px}
-.features{display:flex;gap:16px;margin-top:4px}
-.feature{display:flex;flex-direction:column;align-items:center;gap:4px}
-.feature span{font-size:18px;font-weight:700;color:#0f9f6e}
-.feature label{font-size:10px;color:#6b7280;font-weight:500}
+.brand{display:flex;align-items:baseline;gap:9px;font-family:Georgia,'Times New Roman',serif;
+  font-size:16px;font-weight:600;letter-spacing:-0.01em;color:#29231c}
+.brand .cap{padding-left:9px;border-left:1px solid #d5cbbb;font-family:system-ui,sans-serif;
+  font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:#685a48}
+.mark{width:8px;height:8px;background:#8a3f25;align-self:center}
+h1{font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:600;line-height:1.2;
+  letter-spacing:-0.01em;color:#29231c}
+p{font-size:12.5px;color:#554a3c;line-height:1.65;max-width:340px}
+.features{display:flex;gap:20px;margin-top:6px;padding-top:12px;border-top:1px solid #d5cbbb}
+.feature{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:72px}
+.feature span{font-size:18px;font-weight:600;color:#8a3f25}
+.feature label{font-size:10px;color:#685a48;font-weight:500}
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="brand"><span class="dot"></span>Web Clipper for ima</div>
+  <div class="brand"><span class="mark"></span>ima Clipper<span class="cap">web clipper</span></div>
   <h1>Clip pages. Save knowledge.</h1>
   <p>Extract clean Markdown from any webpage and save it directly to your ima knowledge base.</p>
   <div class="features">
@@ -280,7 +283,7 @@ async function capturePopup(page, serverPort, scenario, label) {
   await page.goto(distUrl, { waitUntil: "networkidle0" });
 
   // Wait for React app to mount (brand mark appears immediately)
-  await page.waitForSelector(".brand-mark", { timeout: 10000 });
+  await page.waitForSelector(".brand-name", { timeout: 10000 });
 
   // Let async operations (capture, extraction, ima settings) settle
   await sleep(2000);
@@ -297,20 +300,27 @@ async function capturePopup(page, serverPort, scenario, label) {
   if (scenario === "saveToIma") {
     try {
       // Wait for ima panel to show knowledge base selector (means fetch mock worked)
-      await page.waitForSelector(".ima-select-compact option", { timeout: 6000 });
+      await page.waitForSelector(".ima-select option", { timeout: 6000 });
     } catch {
       console.warn("    ⚠ ima knowledge bases not loaded");
     }
   }
 
-  // Style for a clean 1280×800 screenshot with info panel on the right
+  // Style for a clean 1280×800 screenshot with info panel on the right.
+  // Colours come from the popup's own paper tokens, so the artwork cannot drift
+  // away from the product UI.
   await page.evaluate((scenario) => {
+    const tokenStyle = getComputedStyle(document.documentElement);
+    const token = (name) => tokenStyle.getPropertyValue(name).trim();
+
     document.body.style.margin = "0";
     document.body.style.padding = "0";
     document.body.style.width = "1280px";
     document.body.style.height = "800px";
     document.body.style.overflow = "hidden";
-    document.body.style.background = "#f4f2ea";
+    document.body.style.background = token("--canvas-deep");
+    document.body.style.color = token("--text-1");
+    document.body.style.fontFamily = token("--font-sans");
     document.body.style.display = "flex";
     document.body.style.alignItems = "stretch";
 
@@ -324,12 +334,16 @@ async function capturePopup(page, serverPort, scenario, label) {
     // Wrap everything in a centred layout
     const wrapper = document.createElement("div");
     wrapper.style.cssText =
-      "display:flex;align-items:center;justify-content:center;flex:1;gap:32px;padding:40px;height:100%;";
+      "display:flex;align-items:center;justify-content:center;flex:1;gap:48px;padding:40px;height:100%;";
 
+    // The popup sits on paper: one hairline frame, no shadow, 8px radius.
+    // Pin it to the real 560×600 popup size — the capture viewport is 800 tall,
+    // and the app sizes itself to the window, so otherwise it would overflow.
     const main = document.querySelector("main");
     if (main) {
-      main.style.boxShadow = "0 4px 32px rgba(0,0,0,0.09)";
-      main.style.borderRadius = "14px";
+      main.style.border = `1px solid ${token("--border-2")}`;
+      main.style.borderRadius = token("--radius-xl");
+      main.style.height = "600px";
       main.style.flexShrink = "0";
     }
 
@@ -370,46 +384,53 @@ async function capturePopup(page, serverPort, scenario, label) {
     panel.style.cssText =
       "display:flex;flex-direction:column;gap:20px;width:380px;flex-shrink:0;";
 
-    // Brand
+    // Brand: serif wordmark + caps, the popup's own header language
     const brand = document.createElement("div");
-    brand.style.cssText =
-      "display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#4a7c65;";
-    const dot = document.createElement("span");
-    dot.style.cssText =
-      "display:inline-block;width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#0f9f6e,#34d399);box-shadow:0 0 0 4px rgba(15,159,110,0.12);";
-    brand.appendChild(dot);
+    brand.style.cssText = `display:flex;align-items:baseline;gap:10px;font-family:${token(
+      "--font-serif"
+    )};font-size:17px;font-weight:600;letter-spacing:-0.01em;color:${token("--text-1")};`;
     brand.appendChild(document.createTextNode("ima Clipper"));
+    const brandCap = document.createElement("span");
+    brandCap.textContent = "web clipper";
+    brandCap.style.cssText = `padding-left:10px;border-left:1px solid ${token(
+      "--border-1"
+    )};font-family:${token("--font-sans")};font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:${token(
+      "--text-3"
+    )};`;
+    brand.appendChild(brandCap);
 
     // Feature title
     const title = document.createElement("h2");
     title.textContent = info.title;
-    title.style.cssText =
-      "margin:0;font-size:28px;font-weight:700;line-height:1.2;color:#0f172a;";
+    title.style.cssText = `margin:0;font-family:${token(
+      "--font-serif"
+    )};font-size:28px;font-weight:600;line-height:1.2;letter-spacing:-0.01em;color:${token(
+      "--text-1"
+    )};`;
 
     // Tagline
     const tagline = document.createElement("p");
     tagline.textContent = info.tagline;
-    tagline.style.cssText =
-      "margin:0;font-size:15px;line-height:1.5;color:#4b5563;";
+    tagline.style.cssText = `margin:0;font-size:15px;line-height:1.65;color:${token("--text-2")};`;
 
     // Divider
     const divider = document.createElement("div");
-    divider.style.cssText =
-      "height:2px;width:60px;background:linear-gradient(90deg,#0f9f6e,transparent);border-radius:1px;";
+    divider.style.cssText = `height:1px;width:60px;background:${token("--accent")};`;
 
-    // Bullet list
+    // Bullet list: accent square markers, no round badge
     const list = document.createElement("ul");
     list.style.cssText =
       "margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;";
     for (const text of info.bullets) {
       const li = document.createElement("li");
-      li.style.cssText =
-        "display:flex;align-items:center;gap:10px;font-size:14px;line-height:1.4;color:#374151;";
-      const check = document.createElement("span");
-      check.textContent = "✓";
-      check.style.cssText =
-        "display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(15,159,110,0.12);color:#0f9f6e;font-size:12px;font-weight:700;flex-shrink:0;";
-      li.appendChild(check);
+      li.style.cssText = `display:flex;align-items:baseline;gap:10px;font-size:14px;line-height:1.65;color:${token(
+        "--text-2"
+      )};`;
+      const mark = document.createElement("span");
+      mark.style.cssText = `display:inline-block;width:6px;height:6px;flex-shrink:0;background:${token(
+        "--accent"
+      )};`;
+      li.appendChild(mark);
       li.appendChild(document.createTextNode(text));
       list.appendChild(li);
     }

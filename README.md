@@ -98,7 +98,7 @@ The packaged extension zip is written to `dist/web-clipper-for-ima-<version>.zip
 src/content/       Content script and manual area selection
 src/background/    MV3 service worker and context menu handling
 src/core/          Extraction, cleanup, and Markdown template logic
-src/ui/popup/      Popup UI, export actions, and ima API / save integration
+src/ui/popup/      Popup UI (paper design tokens live in tokens.css), export actions, and ima API / save integration
 public/icons/      Extension icons packaged into dist
 docs/              Manual test, store listing, privacy, and asset notes
 scripts/           Packaging, validation, CWS publishing, and OAuth helpers
